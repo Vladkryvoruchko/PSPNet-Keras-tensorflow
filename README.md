@@ -31,6 +31,6 @@ Calculation speed: 1.2 sec on gtx 1080
 ## Usage: 
 
 ```bash
-python pspnet.py
+python pspnet.py --input-path INPUT_PATH --output-path OUTPUT_PATH
 ```
-this causes to start 
+
