@@ -10,9 +10,9 @@ Download converted weights here:
 
 And place in directory with pspnet.py
 
-Weights from caffemodel were converted with [caffe-tesnorflow](https://github.com/ethereon/caffe-tensorflow), source code of coverter was modified to fit batch normalization, which is annotated as 'BN' in original prototxt
+Weights from caffemodel were converted with [caffe-tesnorflow](https://github.com/ethereon/caffe-tensorflow), source code of converter was modified to fit batch normalization, which is annotated as 'BN' in original prototxt
 
-Interpolation layer is implemented in code as custom layer
+Interpolation layer is implemented in code as custom layer "Interp"
 
 ## Important
 
