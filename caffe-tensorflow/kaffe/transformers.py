@@ -119,6 +119,7 @@ class DataReshaper(object):
             if node.data is None:
                 continue
             if node.kind not in self.reshaped_node_types:
+
                 # Check for 2+ dimensional data
                 if any(len(tensor.shape) > 1 for tensor in node.data):
                     print_stderr('Warning: parmaters not reshaped for node: {}'.format(node))
@@ -155,6 +156,7 @@ class SubNodeFuser(object):
 
     def __call__(self, graph):
         nodes = graph.nodes
+        print graph.name
         fused_nodes = []
         for node in nodes:
             if len(node.parents) != 1:
@@ -216,11 +218,21 @@ class BatchNormScaleBiasFuser(SubNodeFuser):
     This fuser merges the scaling+bias layer with the batch norm.
     '''
 
-    def is_eligible_pair(self, parent, child):
+    def is_eligible_pair_(self, parent, child):
         return (parent.kind == NodeKind.BatchNorm and child.kind == NodeKind.Scale and
                 child.parameters.axis == 1 and child.parameters.bias_term == True)
 
+    '''
+    Made for the purpose of 
+    '''
+    def is_eligible_pair(self, parent, child):
+        if parent.kind == NodeKind.BatchNorm: 
+            print 'kaffe/transformers.py  line 227: use function above'
+        return (parent.kind == NodeKind.BN and child.kind == NodeKind.Scale and
+                child.parameters.axis == 1 and child.parameters.bias_term == True)
+
     def merge(self, parent, child):
+
         parent.scale_bias_node = child
 
 
@@ -232,10 +244,15 @@ class BatchNormPreprocessor(object):
 
     def __call__(self, graph):
         for node in graph.nodes:
-            if node.kind != NodeKind.BatchNorm:
+            if node.kind not in (NodeKind.BatchNorm, NodeKind.BN):
+                continue
+            else:
                 continue
             assert node.data is not None
+            print len(node.data)
+            print node
             assert len(node.data) == 3
+
             mean, variance, scale = node.data
             # Prescale the stats
             scaling_factor = 1.0 / scale if scale != 0 else 0
@@ -278,9 +295,10 @@ class ParameterNamer(object):
                 names = ('weights',)
                 if node.parameters.bias_term:
                     names += ('biases',)
-            elif node.kind == NodeKind.BatchNorm:
+            elif node.kind in (NodeKind.BatchNorm, NodeKind.BN):
                 names = ('mean', 'variance')
                 if len(node.data) == 4:
+
                     names += ('scale', 'offset')
             else:
                 print_stderr('WARNING: Unhandled parameters: {}'.format(node.kind))

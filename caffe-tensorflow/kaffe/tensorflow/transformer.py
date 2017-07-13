@@ -104,6 +104,9 @@ class TensorFlowMapper(NodeMapper):
     def map_relu(self, node):
         return TensorFlowNode('relu')
 
+    def map_interp(self, node):
+        return TensorFlowNode('relu')
+
     def map_pooling(self, node):
         pool_type = node.parameters.pool
         if pool_type == 0:
@@ -147,6 +150,12 @@ class TensorFlowMapper(NodeMapper):
 
     def map_batch_norm(self, node):
         scale_offset = len(node.data) == 4
+        kwargs = {} if scale_offset else {'scale_offset': False}
+        return MaybeActivated(node, default=False)('batch_normalization', **kwargs)
+
+    def map_bn(self, node):
+        scale_offset = len(node.data) == 4
+        print node
         kwargs = {} if scale_offset else {'scale_offset': False}
         return MaybeActivated(node, default=False)('batch_normalization', **kwargs)
 
