@@ -11,9 +11,9 @@ Download converted weights here:
 And place in directory with pspnet50_ade20k.npy
 
 Weights from caffemodel were converted by, weight_converter.py. The usage of this file is
-<pre>
+``bash
 python weight_converter.py <path to .prototxt> <path to .caffemodel>
-</pre>
+``
 Running this need to compile the original PSPNet caffe code and pycaffe. 
 
 Interpolation layer is implemented in code as custom layer "Interp"
