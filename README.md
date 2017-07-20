@@ -11,16 +11,19 @@ Download converted weights here:
 And place in directory with pspnet50_ade20k.npy
 
 Weights from caffemodel were converted by, weight_converter.py. The usage of this file is
-``bash
+```bash
 python weight_converter.py <path to .prototxt> <path to .caffemodel>
-``
+```
 Running this need to compile the original PSPNet caffe code and pycaffe. 
 
 Interpolation layer is implemented in code as custom layer "Interp"
 
 ## Important
 
-This repo is forked from [Vladkryvoruchko/PSPNet-Keras-tensorflow](https://github.com/Vladkryvoruchko/PSPNet-Keras-tensorflow) and repaired some issues. 
+This repo is forked from [Vladkryvoruchko/PSPNet-Keras-tensorflow](https://github.com/Vladkryvoruchko/PSPNet-Keras-tensorflow) and repaired some issues. Here is an example of current code:
+![Original](test.jpg)
+![Processed](test_seg.jpg)
+![Alpha mixed](test_seg_blended.jpg)
 
 ## Dependencies:
 1. Tensorflow
