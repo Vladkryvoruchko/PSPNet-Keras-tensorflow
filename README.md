@@ -6,26 +6,27 @@ Converted trained weights needed to run the network.
 
 
 Download converted weights here:
-[link:pspnet.npy](https://www.dropbox.com/s/9xebhix7dbk372d/pspnet.npy?dl=0)
+[link:pspnet50_ade20k.npy](https://www.dropbox.com/s/2ksp9hvokzk6qc8/pspnet50_ade20k.npy?dl=0)
 
-And place in directory with pspnet.py
+And place in directory with pspnet50_ade20k.npy
 
-Weights from caffemodel were converted with [caffe-tensorflow](https://github.com/ethereon/caffe-tensorflow), source code of converter was modified to fit batch normalization, which is annotated as 'BN' in original prototxt
+Weights from caffemodel were converted by, weight_converter.py. The usage of this file is
+<pre>
+python weight_converter.py <path to .prototxt> <path to .caffemodel>
+</pre>
+Running this need to compile the original PSPNet caffe code and pycaffe. 
 
 Interpolation layer is implemented in code as custom layer "Interp"
 
 ## Important
 
-This implementation is not working properly despite calculations are made without errors(output image is very very bad).
-I can't figure out which causes such behavior, so help and proposals are appreciated.
-
-Memory usage:3500Mb
-Calculation speed: 1.2 sec on gtx 1080
+This repo is forked from [Vladkryvoruchko/PSPNet-Keras-tensorflow](https://github.com/Vladkryvoruchko/PSPNet-Keras-tensorflow) and repaired some issues. 
 
 ## Dependencies:
 1. Tensorflow
 2. Keras
 3. numpy
+4. pycaffe(PSPNet)(optional)
 
 
 ## Usage: 

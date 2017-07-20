@@ -11,7 +11,7 @@ import time
 
 
 def load_weights():
-	w = np.load('pspnet.npy').item()
+	w = np.load('pspnet50_ade20k.npy').item()
 	return w
 
 
