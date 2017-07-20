@@ -16,8 +16,8 @@ class BaseDraw:
 		self.original_W = self.im.size[0]
 		self.original_H = self.im.size[1]
 
-		self.output_W = 1920
-		self.output_H = 1080	
+		self.output_W = self.original_W
+		self.output_H = self.original_H	
 
 
 	def dumpArray(self, array, i):
@@ -70,5 +70,6 @@ class BaseDraw:
 		#Resize to original size and save
 		self.coef, self.h_pad, self.w_pad = self.calculateResize()
 		FullHdOutImage = self.resizeToOutput(prediction_image, self.coef, self.h_pad, self.w_pad)
+		FullHdOutImage = Image.blend(FullHdOutImage, self.im, 0.5)
 
 		return FullHdOutImage
