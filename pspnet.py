@@ -29,10 +29,10 @@ def set_weights(model, weights):
 			# mean *= scale
 			# variance *= scale
 			
-			model.get_layer(layer.name).set_weights([mean, variance,
-													scale, offset])
-			# model.get_layer(layer.name).set_weights([scale, offset,
-			# 										mean, variance])
+			# model.get_layer(layer.name).set_weights([mean, variance,
+			# 										scale, offset])
+			model.get_layer(layer.name).set_weights([scale, offset,
+													mean, variance])
 			# model.get_layer(layer.name).set_weights([scale, offset,
 													# mean, variance])
 
