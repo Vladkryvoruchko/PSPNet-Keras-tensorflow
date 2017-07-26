@@ -226,5 +226,5 @@ def build_pspnet():
 	#End of model
 	model = Model(inputs=inp, outputs=reshape)
 
-	plot_model(model, to_file='model.png', show_shapes=True)
+	#plot_model(model, to_file='model.png', show_shapes=True)
 	return model
