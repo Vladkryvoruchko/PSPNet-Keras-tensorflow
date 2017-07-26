@@ -67,7 +67,7 @@ def print_activation(model, layer_name, data):
     print layer_name, np_to_str(io)
 
 def np_to_str(a):
-    return "{} {} {} {}".format(a.shape, np.min(a), np.max(a), np.mean(a))
+    return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a), np.max(a), np.mean(a))
 
 
 if __name__ == "__main__":
@@ -88,12 +88,13 @@ if __name__ == "__main__":
     #Load image, resize and paste into 4D tensor
     img = misc.imread(settings.input_path)
     img = misc.imresize(img, (473, 473))
-    img = img.astype('float32') - DATA_MEAN
+    img = img - DATA_MEAN
+    img = img.astype('float32')
     img = img[:,:,::-1]
 
     data = img[np.newaxis, ...]
     print np_to_str(data)
-    
+
     raise
 
     model = pspnet.build_pspnet()
