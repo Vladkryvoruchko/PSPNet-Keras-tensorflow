@@ -85,6 +85,16 @@ if __name__ == "__main__":
     mean_b = 103.939
     DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]])
 
+    #Load image, resize and paste into 4D tensor
+    img = misc.imread(settings.input_path)
+    img = misc.imresize(img, (473, 473))
+    img = img.astype('float32') - DATA_MEAN
+    img = img[:,:,::-1]
+
+    data = img[np.newaxis, ...]
+    print np_to_str(data)
+    
+    raise
 
     model = pspnet.build_pspnet()
 
@@ -97,14 +107,6 @@ if __name__ == "__main__":
         #Set weights to each laye by name
         model = set_weights(model, npy_weights)
 
-        #Load image, resize and paste into 4D tensor
-        img = misc.imread(settings.input_path)
-        img = misc.imresize(img, (473, 473))
-        img = img.astype('float32') - DATA_MEAN
-        img = img[:,:,::-1]
-
-        data = img[np.newaxis, ...]
-        print np_to_str(data)
 
         for layer in model.layers:
             print_activation(model, layer.name, data)
