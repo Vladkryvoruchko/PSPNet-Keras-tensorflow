@@ -103,8 +103,7 @@ if __name__ == "__main__":
         img = img.astype('float32') - DATA_MEAN
         img = img[:,:,::-1]
 
-        data = np.zeros([1,473,473,3])
-        data[0] = img
+        data = img[np.newaxis, ...]
         print np_to_str(data)
 
         for layer in model.layers:
