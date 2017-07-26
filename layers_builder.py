@@ -3,6 +3,8 @@ from keras.layers import BatchNormalization, Activation, Input, Dropout, ZeroPad
 from keras.layers import merge, concatenate, Lambda, Reshape
 from keras.models import Model
 
+from keras.utils import plot_model
+
 import tensorflow as tf
 
 
@@ -222,4 +224,6 @@ def build_pspnet():
 
 	#End of model
 	model = Model(inputs=inp, outputs=reshape)
+
+	plot_model(model, to_file='model.png', show_shapes=True)
 	return model

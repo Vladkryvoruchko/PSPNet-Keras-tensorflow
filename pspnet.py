@@ -1,4 +1,6 @@
 from keras import backend as K
+from keras.models import Model
+
 from PIL import Image
 
 import layers_builder as pspnet
@@ -7,6 +9,9 @@ import numpy as np
 import drawImage
 import argparse
 import time
+
+from scipy import misc
+import utils
 
 
 
@@ -26,6 +31,11 @@ def set_weights(model, weights):
 			mean = weights[layer.name]['mean'].reshape(-1)
 			variance = weights[layer.name]['variance'].reshape(-1)
 
+			print "scale", np_to_str(scale)
+			print "offset", np_to_str(offset)
+			print "mean", np_to_str(mean)
+			print "variance", np_to_str(variance)
+
 			# mean *= scale
 			# variance *= scale
 			
@@ -40,13 +50,26 @@ def set_weights(model, weights):
 			print layer.name
 			try:
 				weight = weights[layer.name]['weights']
+				print "weights", np_to_str(weight)
 				model.get_layer(layer.name).set_weights([weight])
 			except Exception as err:
 				biases = weights[layer.name]['biases']
+				print "biases", np_to_str(biases)
 				model.get_layer(layer.name).set_weights([weight, biases])
+		# else:
+		# 	print layer.name, "missing"
 
 	print 'weights set finish'
 	return model
+
+def print_activation(model, layer_name, data):
+	intermediate_layer_model = Model(inputs=model.input,
+	                                 outputs=model.get_layer(layer_name).output)
+	io = intermediate_layer_model.predict(data)
+	print layer_name, np_to_str(io)
+
+def np_to_str(a):
+	return "{} {} {} {}".format(a.shape, np.min(a), np.max(a), np.mean(a))
 
 
 if __name__ == "__main__":
@@ -84,6 +107,9 @@ if __name__ == "__main__":
 
 		data[0] = input_
 
+		for layer in model.layers:
+			print_activation(model, layer.name, data)
+
 		#predict
 		
 		startForward = time.time()
@@ -93,20 +119,24 @@ if __name__ == "__main__":
 		# pred = np.transpose(pred[0], (2, 1, 0))
 		print np.shape(pred)
 		pred = pred[0]
-		predicted_classes = np.argmax(pred, axis=2)
+		predicted_classes = np.argmax(pred, axis=2) + 1
 
-		proto = 'utils/model/pspnet.prototxt'
-		weights = 'utils/model/pspnet.caffemodel'
-		colors = 'utils/colorization/color150.mat'
-		objects = 'utils/colorization/objectName150.mat'
+		color = utils.add_color(predicted_classes)
+		misc.imsave(settings.output_path, color)
 
 
-		im_Width = predicted_classes.shape[0]
-		im_Height = predicted_classes.shape[1]
-		draw = drawImage.BaseDraw(colors, objects,
-							image, (im_Width, im_Height),
-							predicted_classes)
-		simpleSegmentImage = draw.drawSimpleSegment();
-		simpleSegmentImage.save(settings.output_path,"JPEG")
+		# proto = 'utils/model/pspnet.prototxt'
+		# weights = 'utils/model/pspnet.caffemodel'
+		# colors = 'utils/colorization/color150.mat'
+		# objects = 'utils/colorization/objectName150.mat'
+
+
+		# im_Width = predicted_classes.shape[0]
+		# im_Height = predicted_classes.shape[1]
+		# draw = drawImage.BaseDraw(colors, objects,
+		# 					image, (im_Width, im_Height),
+		# 					predicted_classes)
+		# simpleSegmentImage = draw.drawSimpleSegment();
+		# simpleSegmentImage.save(settings.output_path,"JPEG")
 
 
