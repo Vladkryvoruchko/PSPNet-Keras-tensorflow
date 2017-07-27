@@ -22,17 +22,17 @@ def set_weights(model, weights):
     print 'weights set start'
     for layer in model.layers:
         if layer.name[:4] == 'conv' and layer.name[-2:] == 'bn':
-            print layer.name
+            #print layer.name
             scale = weights[layer.name]['scale'].reshape(-1)
 
             offset = weights[layer.name]['offset'].reshape(-1)
             mean = weights[layer.name]['mean'].reshape(-1)
             variance = weights[layer.name]['variance'].reshape(-1)
 
-            print "mean", np_to_str(mean)
-            print "variance", np_to_str(variance)
-            print "scale", np_to_str(scale)
-            print "offset", np_to_str(offset)
+            #print "mean", np_to_str(mean)
+            #print "variance", np_to_str(variance)
+            #print "scale", np_to_str(scale)
+            #print "offset", np_to_str(offset)
 
             # mean *= scale
             # variance *= scale
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         model = set_weights(model, npy_weights)
 
         names = [layer.name for layer in model.layers]
-        for name in names[:100]:
+        for name in names[215:]:
             print_activation(model, name, data)
 
         #predict
