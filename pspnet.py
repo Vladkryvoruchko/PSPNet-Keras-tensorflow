@@ -1,15 +1,18 @@
 import os
 import sys
 import time
+import argparse
 import numpy as np
 from scipy import misc
 
 from keras import backend as K
+from keras.models import Model
 import tensorflow as tf
 
 import layers_builder as layers
+import image_processor
 from datasource import DataSource
-from image_processor import ImageProcessor
+from prefetcher import PreFetcher
 
 WEIGHTS = 'pspnet50_ade20k.npy'
 
@@ -19,20 +22,19 @@ class PSPNet:
         self.model = layers.build_pspnet()
         set_weights(self.model)
 
-        self.image_processor = ImageProcessor()
-        # self.prefetcher = PreFetcher(datasource, image_processor)
+        self.prefetcher = PreFetcher(datasource)
 
-    # def train(self):
-    #     model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=20000, nb_epoch=10)
+    def train(self):
+        model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=20000, nb_epoch=10)
 
     def predict_sliding_window(self, img):
-        patches = self.image_processor.sliding_window(img)
+        patches = image_processor.sliding_window(img)
         print patches.shape
         crop_probs = []
         for patch in patches:
             crop_prob = self.feed_forward(patch)
             crop_probs.append(crop_prob)
-        probs = self.image_processor.post_process_sliding_window(img, crop_probs)
+        probs = image_processor.post_process_sliding_window(img, crop_probs)
         return probs
 
     def feed_forward(self, data):

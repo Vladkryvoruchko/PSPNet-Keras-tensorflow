@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 from scipy import misc
 
-import utils_run as utils
+import utils
 
 NUM_CLASS = 150
 

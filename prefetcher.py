@@ -1,11 +1,9 @@
 from multiprocessing import Pool, cpu_count
 
-import utils_run as utils
-from image_processor import ImageProcessor
-from data_source import DataSource
+import image_processor
 
 class PreFetcher:
-    def __init__(self, datasource, image_processor, batch_size=1, ahead=4):
+    def __init__(self, datasource, batch_size=1, ahead=4):
 
         cpus = cpu_count()
         self.pool = Pool(processes=min(ahead, cpus))
@@ -14,7 +12,6 @@ class PreFetcher:
         self.batch_queue = []
 
         self.datasource = datasource
-        self.image_processor = image_processor
 
     def fetch_batch(self):
         try:
@@ -29,13 +26,15 @@ class PreFetcher:
     def refill_tasks(self):
         while len(self.batch_queue) < self.ahead:
             im = self.datasource.next_im()
-            d = (self.image_processor, im)
+            d = (self.datasource, im)
 
             batch = self.pool.map_async(build_train, [d])
             self.batch_queue.append(batch)
 
 def build_train(d):
-    image_processor, im = d
-    batch = image_processor.build_data_and_label(im)
+    datasource, im = d
+    img = datasource.get_image(im)
+    gt = datasource.get_ground_truth(im)
+    batch = image_processor.build_data_and_label(img, gt)
     return batch
 

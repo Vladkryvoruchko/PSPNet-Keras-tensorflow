@@ -6,6 +6,8 @@ CAFFE_ROOT = '/data/vision/torralba/segmentation/places/PSPNet/'
 sys.path.insert(0, os.path.join(CAFFE_ROOT, 'python'))
 import caffe
 
+# Not needed because Tensorflow and Caffe do convolution the same way
+# Needed for conversion to Theano
 def rot90(W):
     for i in range(W.shape[0]):
         for j in range(W.shape[1]):

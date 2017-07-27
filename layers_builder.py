@@ -126,15 +126,15 @@ def ResNet(inp):
     bn1 = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(cnv1)  # "conv1_1_3x3_s2/bn"
     relu1 = Activation('relu')(bn1)             #"conv1_1_3x3_s2/relu"
 
-    cnv1 = Conv2D(64, (3, 3), strides=(1, 1), padding='same', use_bias=False, name=names[2])(cnv1) #"conv1_2_3x3"
+    cnv1 = Conv2D(64, (3, 3), strides=(1, 1), padding='same', use_bias=False, name=names[2])(relu1) #"conv1_2_3x3"
     bn1 = BatchNormalization(momentum=0.95, name=names[3], epsilon=1e-5)(cnv1)  #"conv1_2_3x3/bn"
     relu1 = Activation('relu')(bn1)                 #"conv1_2_3x3/relu"
 
-    cnv1 = Conv2D(128, (3, 3), strides=(1, 1), padding='same', use_bias=False, name=names[4])(cnv1) #"conv1_3_3x3"
+    cnv1 = Conv2D(128, (3, 3), strides=(1, 1), padding='same', use_bias=False, name=names[4])(relu1) #"conv1_3_3x3"
     bn1 = BatchNormalization(momentum=0.95, name=names[5], epsilon=1e-5)(cnv1)      #"conv1_3_3x3/bn"
     relu1 = Activation('relu')(bn1)             #"conv1_3_3x3/relu"
 
-    res = MaxPooling2D(pool_size=(3,3), padding='same', strides=(2,2))(res)  #"pool1_3x3_s2"
+    res = MaxPooling2D(pool_size=(3,3), padding='same', strides=(2,2))(relu1)  #"pool1_3x3_s2"
     
     #---Residual layers(body of network)
 
