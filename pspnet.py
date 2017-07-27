@@ -107,7 +107,9 @@ if __name__ == "__main__":
 
 
         for layer in model.layers:
-            print_activation(model, layer.name, data)
+            name = layer.name
+            if "conv5_3" in name or "activation_5" in name or "lambda" in name or "concatenate_1" in name or "conv5_4" in name:
+                print_activation(model, name, data)
 
         #predict
         

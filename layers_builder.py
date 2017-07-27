@@ -14,7 +14,7 @@ def Interp(x, size=(60,60)):
 	print(x.shape)
 	new_height = size[0]
 	new_width = size[1]
-	resized = tf.image.resize_images(x, [new_height, new_width])
+	resized = tf.image.resize_images(x, [new_height, new_width], align_corners=True)
 	print(resized.shape)
 	return resized
 
@@ -25,7 +25,7 @@ def Interp_zoom(x, zoom=8):
 	old_width = int(x.shape[2])
 	new_height = old_height + (old_height-1) * (zoom - 1)
 	new_width = old_width + (old_width-1) * (zoom - 1)
-	resized = tf.image.resize_images(x, [new_height, new_width])
+	resized = tf.image.resize_images(x, [new_height, new_width], align_corners=True)
 	return resized
 
 
