@@ -105,11 +105,9 @@ if __name__ == "__main__":
         #Set weights to each laye by name
         model = set_weights(model, npy_weights)
 
-
-        for layer in model.layers:
-            name = layer.name
-            if "activation_57" in name or "activation_58" in name or "lambda" in name or "concatenate_1" in name or "conv5_4" in name:
-                print_activation(model, name, data)
+        names = [layer.name for layer in model.layers]
+        for name in names[:100]:
+            print_activation(model, name, data)
 
         #predict
         
