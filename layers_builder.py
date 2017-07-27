@@ -142,7 +142,7 @@ def build_pspnet():
 	inp = Input((473,473, 3))
 
 	# cnv1 = ZeroPadding2D(padding=(1,1))(inp)
-	cnv1 = Conv2D(64, (3, 3), strides=(2, 2), padding='same',kernel_regularizer=l2(0.0005), use_bias=False, name=names[0])(inp) # "conv1_1_3x3_s2"
+	cnv1 = Conv2D(64, (3, 3), strides=(2, 2), padding='same', use_bias=False, name=names[0])(inp) # "conv1_1_3x3_s2"
 	
 	bn1 = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(cnv1)  # "conv1_1_3x3_s2/bn"
 	relu1 = Activation('relu')(bn1)				#"conv1_1_3x3_s2/relu"

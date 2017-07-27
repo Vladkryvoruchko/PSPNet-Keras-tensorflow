@@ -18,12 +18,12 @@ for k,v in net.params.items():
 	print "Layer %s, has %d params." % (k, len(v))
 	if len(v) == 1:
 		W = v[0].data[...]
-		W = rot90(W)
+		#W = rot90(W)
 		W = np.transpose(W, (2,3,1,0))
 		weights[k] = {"weights": W}
 	elif len(v) == 2:
 		W = v[0].data[...]
-		W = rot90(W)
+		#W = rot90(W)
 		W = np.transpose(W, (2,3,1,0))
 		b = v[1].data[...]
 		weights[k] = {"weights": W, "biases": b}

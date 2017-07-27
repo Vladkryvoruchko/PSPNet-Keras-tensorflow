@@ -1,8 +1,6 @@
 from keras import backend as K
 from keras.models import Model
 
-from PIL import Image
-
 import layers_builder as pspnet
 import tensorflow as tf
 import numpy as np
@@ -88,14 +86,13 @@ if __name__ == "__main__":
     #Load image, resize and paste into 4D tensor
     img = misc.imread(settings.input_path)
     img = misc.imresize(img, (473, 473))
+    print np_to_str(img)
     img = img - DATA_MEAN
     img = img.astype('float32')
     img = img[:,:,::-1]
 
     data = img[np.newaxis, ...]
     print np_to_str(data)
-
-    raise
 
     model = pspnet.build_pspnet()
 
