@@ -211,7 +211,7 @@ def build_pspnet():
 	
 	res = BatchNormalization(momentum=0.95, name="conv5_4_bn", epsilon=1e-5)(res)
 	res = Activation('relu')(res)
-	#res = Dropout(0.1)(res) #used only in training
+	res = Dropout(0.1)(res) #used only in training
 	res = Conv2D(150, (1, 1), strides=(1, 1), name="conv6")(res)
 	res = Lambda(Interp_zoom)(res)
 
