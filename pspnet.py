@@ -22,19 +22,19 @@ class PSPNet:
         # Data source
         self.datasource = datasource
 
-        # Load model
-        self.mode = mode
-        if self.mode == "softmax":
-            self.model = layers.build_pspnet()
-        elif self.mode == "sigmoid":
-            self.model = layers.build_pspnet_sigmoid()
-
-        # Load weights
         if ckpt is not None:
-            load_model(ckpt)
+            print "Loading ", ckpt
+            self.model = load_model(ckpt, custom_objects={'Interp': layers.Interp,
+                                                            'Interp_zoom': layers.Interp_zoom})
         else:
-            pass
-            #set_weights(self.model)
+            # Build model
+            self.mode = mode
+            if self.mode == "softmax":
+                self.model = layers.build_pspnet()
+            elif self.mode == "sigmoid":
+                self.model = layers.build_pspnet_sigmoid()
+            print "Loading original weights"
+            set_weights(self.model)
 
     def generator(self):
         while True:
@@ -104,9 +104,7 @@ def array_to_str(a):
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a), np.max(a), np.mean(a))
 
 def set_weights(model):
-    print 'Opening weights...'
     weights = np.load(WEIGHTS).item()
-    print 'Loading weights...'
 
     for layer in model.layers:
         print layer.name
