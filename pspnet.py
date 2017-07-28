@@ -33,13 +33,14 @@ class PSPNet:
         self.prefetcher = PreFetcher(datasource)
 
     def generator(self):
-        im = self.datasource.next_im()
-        print im
-        img = self.datasource.get_image(im)
-        gt = self.datasource.get_ground_truth(im)
-        data,label = image_processor.build_data_and_label(img, gt)
-        print data.shape, label.shape
-        return data,label
+        while True:
+            im = self.datasource.next_im()
+            print im
+            img = self.datasource.get_image(im)
+            gt = self.datasource.get_ground_truth(im)
+            data,label = image_processor.build_data_and_label(img, gt)
+            print data.shape, label.shape
+            yield (data,label)
 
     def train(self):
         path = "checkpoints/{}".format(self.mode)
