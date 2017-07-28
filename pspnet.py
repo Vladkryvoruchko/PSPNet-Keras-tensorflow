@@ -28,13 +28,19 @@ class PSPNet:
     #     model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=20000, nb_epoch=10)
 
     def predict_sliding_window(self, img):
-        patches = image_processor.sliding_window(img)
+        patches = image_processor.build_sliding_window(img)
         print patches.shape
         crop_probs = []
         for patch in patches:
             crop_prob = self.feed_forward(patch)
             crop_probs.append(crop_prob)
         probs = image_processor.post_process_sliding_window(img, crop_probs)
+        return probs
+
+    def predict(self, img):
+        img = misc.imresize(img, (473, 473))
+        img = image_processor.preprocess(img)
+        probs = self.feed_forward(img)
         return probs
 
     def feed_forward(self, data):
@@ -44,7 +50,7 @@ class PSPNet:
         '''
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
-        print_array(data)
+        print array_to_str(data)
 
         self.debug(data)
         pred = self.model.predict(data, batch_size=1)
@@ -59,9 +65,9 @@ def print_activation(model, layer_name, data):
     intermediate_layer_model = Model(inputs=model.input,
                                      outputs=model.get_layer(layer_name).output)
     io = intermediate_layer_model.predict(data)
-    print layer_name, print_array(io)
+    print layer_name, array_to_str(io)
 
-def print_array(a):
+def array_to_str(a):
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a), np.max(a), np.mean(a))
 
 def set_weights(model):
@@ -103,10 +109,9 @@ if __name__ == "__main__":
         pspnet = PSPNet(None)
 
         img = misc.imread(args.input_path)
-        img = misc.imresize(img, (473, 473))
-        print_array(img)
+        print array_to_str(img)
 
-        probs = pspnet.predict_sliding_window(img)
+        probs = pspnet.predict(img)
         print probs.shape
 
         cm = np.argmax(probs, axis=2) + 1

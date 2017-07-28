@@ -33,7 +33,7 @@ def build_sliding_window(img):
     img = preprocess(img)
     img = scale_maxside(img, maxside=512)
 
-    data = sliding_window(img)
+    data = crop_sliding_window(img)
     return data
 
 def post_process_sliding_window(img, crop_probs):

@@ -14,7 +14,7 @@ def preprocess(img):
     img = img - DATA_MEAN
     # RGB => BGR
     img = img[:,:,::-1]
-    return image.astype('float32')
+    return img.astype('float32')
 
 def crop_image(img, box):
     sh,eh,sw,ew = box
@@ -42,7 +42,7 @@ def random_crop(img):
     box = (sh,eh,sw,ew)
     return box
 
-def sliding_window(img):
+def crop_sliding_window(img):
     h,w,_ = img.shape
     crop_boxes = sw_crop_boxes(h,w)
     n = len(crop_boxes)
