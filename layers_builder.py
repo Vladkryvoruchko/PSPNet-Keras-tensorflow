@@ -40,6 +40,7 @@ def residual_conv(prev, level, pad=1, lvl=1, sub_lvl=1, modify_stride=False):
                     name=names[0])(prev)
 
     prev = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(prev)
+    prev.trainable = False
     prev = Activation('relu')(prev)
 
     prev = ZeroPadding2D(padding=(pad,pad))(prev)
@@ -48,10 +49,12 @@ def residual_conv(prev, level, pad=1, lvl=1, sub_lvl=1, modify_stride=False):
                     name=names[2])(prev)
 
     prev = BatchNormalization(momentum=0.95, name=names[3], epsilon=1e-5)(prev)
+    prev.trainable = False
     prev = Activation('relu')(prev)
     prev = Conv2D(256 * level, (1,1), strides=(1,1), use_bias=False,
                     name=names[4])(prev)
     prev = BatchNormalization(momentum=0.95, name=names[5], epsilon=1e-5)(prev)
+    prev.trainable = False
     return prev
 
 def short_convolution_branch(prev, level, lvl=1, sub_lvl=1, modify_stride=False):
@@ -68,6 +71,7 @@ def short_convolution_branch(prev, level, lvl=1, sub_lvl=1, modify_stride=False)
                 name=names[0])(prev)
 
     prev = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(prev)
+    prev.trainable = False
     return prev
 
 def empty_branch(prev):
@@ -107,6 +111,7 @@ def interp_block(prev_layer, level, str_lvl=1):
     prev_layer = AveragePooling2D(kernel,strides=strides)(prev_layer)
     prev_layer = Conv2D(512, (1,1), strides=(1,1), use_bias=False, name=names[0])(prev_layer)
     prev_layer = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(prev_layer)
+    prev_layer.trainable = False
     prev_layer = Activation('relu')(prev_layer)
     prev_layer = Lambda(Interp)(prev_layer)
     return prev_layer
@@ -124,14 +129,17 @@ def ResNet(inp):
 
     cnv1 = Conv2D(64, (3, 3), strides=(2, 2), padding='same', use_bias=False, name=names[0])(inp) # "conv1_1_3x3_s2"
     bn1 = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(cnv1)  # "conv1_1_3x3_s2/bn"
+    bn1.trainable = False
     relu1 = Activation('relu')(bn1)             #"conv1_1_3x3_s2/relu"
 
     cnv1 = Conv2D(64, (3, 3), strides=(1, 1), padding='same', use_bias=False, name=names[2])(relu1) #"conv1_2_3x3"
     bn1 = BatchNormalization(momentum=0.95, name=names[3], epsilon=1e-5)(cnv1)  #"conv1_2_3x3/bn"
+    bn1.trainable = False
     relu1 = Activation('relu')(bn1)                 #"conv1_2_3x3/relu"
 
     cnv1 = Conv2D(128, (3, 3), strides=(1, 1), padding='same', use_bias=False, name=names[4])(relu1) #"conv1_3_3x3"
     bn1 = BatchNormalization(momentum=0.95, name=names[5], epsilon=1e-5)(cnv1)      #"conv1_3_3x3/bn"
+    bn1.trainable = False
     relu1 = Activation('relu')(bn1)             #"conv1_3_3x3/relu"
 
     res = MaxPooling2D(pool_size=(3,3), padding='same', strides=(2,2))(relu1)  #"pool1_3x3_s2"
@@ -193,6 +201,7 @@ def build_pspnet():
 
     x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", use_bias=False, name="conv5_4")(psp)
     x = BatchNormalization(momentum=0.95, name="conv5_4_bn", epsilon=1e-5)(x)
+    x.trainable = False
     x = Activation('relu')(x)
     x = Dropout(0.1)(x)
 

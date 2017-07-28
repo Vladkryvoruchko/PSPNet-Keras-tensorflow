@@ -28,9 +28,9 @@ class PSPNet:
         elif self.mode == "sigmoid":
             self.model = layers.build_pspnet_sigmoid()
 
-        #set_weights(self.model)
+        set_weights(self.model)
         self.datasource = datasource
-        self.prefetcher = PreFetcher(datasource)
+        #self.prefetcher = PreFetcher(datasource)
 
     def generator(self):
         while True:
@@ -46,17 +46,17 @@ class PSPNet:
 
     def train(self):
         path = "checkpoints/{}".format(self.mode)
-        fn = "weights.{epoch:02d}-{val_loss:.2f}.hdf5"
+        fn = "weights.{epoch:02d}-{loss:.2f}.hdf5"
         filepath = os.path.join(path, fn)
-        checkpoint = ModelCheckpoint(filepath, monitor='val_loss')
+        checkpoint = ModelCheckpoint(filepath, monitor='loss')
         callbacks_list = [checkpoint]
         
-        adam = Adam(lr=1e-5)
+        adam = Adam(lr=1e-4)
         self.model.compile(optimizer=adam,
               loss='categorical_crossentropy',
               metrics=['accuracy'])
         self.model.fit_generator(self.generator(), 1000, epochs=100, callbacks=callbacks_list,
-                 verbose=2, workers=8, use_multiprocessing=True)
+                 verbose=1, workers=1)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)
