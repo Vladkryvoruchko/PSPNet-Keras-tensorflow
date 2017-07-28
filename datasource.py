@@ -10,7 +10,7 @@ import utils
 NUM_CLASS = 150
 
 class DataSource:
-    def __init__(self, config, random=True, mode="sigmoid"):
+    def __init__(self, config, random=True):
         self.image_dir = config["images"]
         self.ground_truth_dir = config["ground_truth"]
 
@@ -20,8 +20,6 @@ class DataSource:
         self.random = random
         if not self.random:
             self.idx = -1
-
-        self.mode = mode
 
     def next_im(self):
         if self.random:
@@ -43,9 +41,6 @@ class DataSource:
     def get_ground_truth(self, im):
         gt_path = os.path.join(self.ground_truth_dir, im.replace('.jpg', '.png'))
         gt = misc.imread(gt_path)
-        if self.mode == "softmax":
-            return gt
-        elif self.mode == "sigmoid":
-            gt = (np.arange(NUM_CLASS) == gt[:,:,None] - 1)
-            return gt
+        gt = (np.arange(NUM_CLASS) == gt[:,:,None] - 1)
+        return gt
 

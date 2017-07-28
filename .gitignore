@@ -3,4 +3,4 @@
 *.npy
 
 checkpoints/*
-
+predictions/*

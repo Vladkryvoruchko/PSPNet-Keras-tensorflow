@@ -6,31 +6,35 @@ import numpy as np
 from scipy import misc
 
 from keras import backend as K
-from keras.models import Model
-from keras.optimizers import Adam
+from keras.models import Model, load_model
 from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 
 import layers_builder as layers
 import image_processor
 from datasource import DataSource
-from prefetcher import PreFetcher
 
 WEIGHTS = 'pspnet50_ade20k.npy'
 
 class PSPNet:
 
-    def __init__(self, datasource, mode="softmax"):
-        self.mode = mode
+    def __init__(self, datasource, mode="softmax", ckpt=None):
+        # Data source
+        self.datasource = datasource
 
+        # Load model
+        self.mode = mode
         if self.mode == "softmax":
             self.model = layers.build_pspnet()
         elif self.mode == "sigmoid":
             self.model = layers.build_pspnet_sigmoid()
 
-        set_weights(self.model)
-        self.datasource = datasource
-        #self.prefetcher = PreFetcher(datasource)
+        # Load weights
+        if ckpt is not None:
+            load_model(ckpt)
+        else:
+            pass
+            #set_weights(self.model)
 
     def generator(self):
         while True:
@@ -41,7 +45,6 @@ class PSPNet:
             gt = self.datasource.get_ground_truth(im)
             data,label = image_processor.build_data_and_label(img, gt)
             print time.time() - t
-            print data.shape, label.shape
             yield (data,label)
 
     def train(self):
@@ -51,20 +54,17 @@ class PSPNet:
         checkpoint = ModelCheckpoint(filepath, monitor='loss')
         callbacks_list = [checkpoint]
         
-        adam = Adam(lr=1e-4)
-        self.model.compile(optimizer=adam,
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
         self.model.fit_generator(self.generator(), 1000, epochs=100, callbacks=callbacks_list,
                  verbose=1, workers=1)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)
-        print patches.shape
-        crop_probs = []
+
+        outputs = []
         for patch in patches:
-            crop_prob = self.feed_forward(patch)
-            crop_probs.append(crop_prob)
+            out = self.feed_forward(patch)
+            outputs.append(out)
+        crop_probs = np.concatenate(outputs, axis=0)
         probs = image_processor.post_process_sliding_window(img, crop_probs)
         return probs
 
@@ -81,9 +81,10 @@ class PSPNet:
         '''
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
-        print array_to_str(data)
+        #print array_to_str(data)
 
-        self.debug(data)
+        #self.debug(data)
+
         pred = self.model.predict(data, batch_size=1)
         return pred
 
@@ -92,12 +93,13 @@ class PSPNet:
         for name in names[-12:]:
             print_activation(self.model, name, data)
 
+
+
 def print_activation(model, layer_name, data):
     intermediate_layer_model = Model(inputs=model.input,
                                      outputs=model.get_layer(layer_name).output)
     io = intermediate_layer_model.predict(data)
     print layer_name, array_to_str(io)
-
 def array_to_str(a):
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a), np.max(a), np.mean(a))
 

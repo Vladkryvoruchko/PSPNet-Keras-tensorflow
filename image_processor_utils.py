@@ -55,17 +55,17 @@ def crop_sliding_window(img):
 
 def assemble_probs(shape, crop_probs):
     h,w = shape[:2]
-    probs = np.zeros((NUM_CLASS, h, w), dtype=np.float32)
-    cnts = np.zeros((1,h,w))
+    probs = np.zeros((h, w, NUM_CLASS), dtype=np.float32)
+    cnts = np.zeros((h,w,1))
 
-    crop_boxes = sw_crop_boxes(h,w)
-    n = len(crop_boxes)
+    boxes = sw_crop_boxes(h,w)
+    n = len(boxes)
     for i in xrange(n):
-        sh,eh,sw,ew = crop_boxes[i]
+        sh,eh,sw,ew = boxes[i]
         crop_prob = crop_probs[i]
 
-        probs[:,sh:eh,sw:ew] += crop_prob[:,0:eh-sh,0:ew-sw]
-        cnts[0,sh:eh,sw:ew] += 1
+        probs[sh:eh,sw:ew,:] += crop_prob[0:eh-sh,0:ew-sw,:]
+        cnts[sh:eh,sw:ew,0] += 1
 
     assert cnts.min()>=1
     probs /= cnts
@@ -103,7 +103,7 @@ def scale_maxside(a, maxside=512):
     return scale(a, (h_t,w_t))
 
 def scale(a, shape):
-    h_t,w_t = shape
+    h_t,w_t = shape[:2]
     h,w = a.shape[:2]
     r_h = 1.*h_t/h
     r_w = 1.*w_t/w
