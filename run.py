@@ -13,11 +13,13 @@ from datasource import DataSource
 import utils
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--id', default=0,type=int)
+parser.add_argument('--id', default="0")
 parser.add_argument("-p", required=True, help="Project name")
 parser.add_argument("--mode", required=True, help="softmax, sigmoid, etc")
 parser.add_argument("--checkpoint", help="Checkpoint .hdf5")
 args = parser.parse_args()
+
+os.environ["CUDA_VISIBLE_DEVICES"] = args.id
 
 project = args.p
 mode = args.mode
@@ -65,12 +67,13 @@ with sess.as_default():
 
         img = datasource.get_image(im)
         probs = pspnet.predict_sliding_window(img)
+        probs = np.transpose(probs, (2,0,1))
         # probs is 150 x h x w
 
         # calculate output
-        pred_mask = np.argmax(probs, axis=2) + 1
-        prob_mask = np.max(probs, axis=2)
-        max_prob = np.max(probs, axis=(0,1))
+        pred_mask = np.argmax(probs, axis=0) + 1
+        prob_mask = np.max(probs, axis=0)
+        max_prob = np.max(probs, axis=(1,2))
         all_prob = probs
 
         # write to file

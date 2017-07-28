@@ -6,17 +6,15 @@ from keras.regularizers import l2
 from keras.optimizers import Adam
 
 from keras.utils import plot_model
-
+import tensorflow as tf
 
 def Interp(x, size=(60,60)):
-    import tensorflow as tf
     new_height = size[0]
     new_width = size[1]
     resized = tf.image.resize_images(x, [new_height, new_width], align_corners=True)
     return resized
 
 def Interp_zoom(x, zoom=8):
-    import tensorflow as tf
     old_height = int(x.shape[1])
     old_width = int(x.shape[2])
     new_height = old_height + (old_height-1) * (zoom - 1)

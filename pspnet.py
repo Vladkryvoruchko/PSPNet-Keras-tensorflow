@@ -25,7 +25,8 @@ class PSPNet:
         if ckpt is not None:
             print "Loading ", ckpt
             self.model = load_model(ckpt, custom_objects={'Interp': layers.Interp,
-                                                            'Interp_zoom': layers.Interp_zoom})
+                                                            'Interp_zoom': layers.Interp_zoom,
+                                                            'tf': tf})
         else:
             # Build model
             self.mode = mode
