@@ -8,6 +8,8 @@ from keras.optimizers import Adam
 from keras.utils import plot_model
 import tensorflow as tf
 
+weight_decay = l2(0.0005)
+
 def Interp(x, size=(60,60)):
     new_height = size[0]
     new_width = size[1]
@@ -151,7 +153,7 @@ def ResNet(inp):
 
     #3_1 - 3_3
     res = residual_short(res, 2, pad=1, lvl=3, sub_lvl=1, modify_stride=True) 
-    for i in range(3): #for i in range(2): old wrong code 
+    for i in range(3):
         res = residual_empty(res, 2, pad=1, lvl=3, sub_lvl=i+2) 
 
     #4_1 - 4_6
@@ -193,7 +195,7 @@ def build_pspnet():
     psp = PSPNet(res)
 
     x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", use_bias=False, name="conv5_4")(psp)
-    x = BatchNormalization(momentum=0.95, name="conv5_4_bn", epsilon=1e-5, trainable=False)(x)
+    x = BatchNormalization(momentum=0.95, name="conv5_4_bn", epsilon=1e-5)(x)
     x = Activation('relu')(x)
     x = Dropout(0.1)(x)
 
@@ -210,7 +212,8 @@ def build_pspnet():
     model = Model(inputs=inp, outputs=reshape)
 
     # Solver
-    adam = Adam(lr=1e-4)
+    adam = SGD(lr=1e-3, momentum=0.99, nesterov=True)
+
     model.compile(optimizer=adam,
                     loss='categorical_crossentropy',
                     metrics=['accuracy'])

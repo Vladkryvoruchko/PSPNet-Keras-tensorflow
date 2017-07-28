@@ -39,10 +39,10 @@ sess = tf.Session()
 K.set_session(sess)
 with sess.as_default():
     config = utils.get_config(project)
+    random.seed(3)
     datasource = DataSource(config, random=False)
     pspnet = PSPNet(datasource, mode=mode, ckpt=checkpoint)
 
-    random.seed(3)
     for im in datasource.im_list:
         print im
 

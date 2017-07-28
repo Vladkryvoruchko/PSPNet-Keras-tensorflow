@@ -82,16 +82,15 @@ class PSPNet:
         '''
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
-        #print array_to_str(data)
 
-        #self.debug(data)
+        self.debug(data)
 
         pred = self.model.predict(data, batch_size=1)
         return pred
 
     def debug(self, data):
         names = [layer.name for layer in self.model.layers]
-        for name in names[-12:]:
+        for name in names[:]:
             print_activation(self.model, name, data)
 
 
