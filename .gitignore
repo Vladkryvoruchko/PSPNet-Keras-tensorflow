@@ -2,3 +2,5 @@
 *.png
 *.npy
 
+checkpoints/*
+

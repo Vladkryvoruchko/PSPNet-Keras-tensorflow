@@ -7,6 +7,7 @@ from scipy import misc
 
 from keras import backend as K
 from keras.models import Model
+from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 
 import layers_builder as layers
@@ -18,14 +19,23 @@ WEIGHTS = 'pspnet50_ade20k.npy'
 
 class PSPNet:
 
-    def __init__(self, datasource):
-        self.model = layers.build_pspnet()
-        set_weights(self.model)
+    def __init__(self, datasource, mode="softmax"):
+        self.mode = mode
 
+        if self.mode == "softmax":
+            self.model = layers.build_pspnet()
+        elif self.mode == "sigmoid":
+            self.model = layers.build_pspnet_sigmoid()
+
+        set_weights(self.model)
         self.prefetcher = PreFetcher(datasource)
 
     def train(self):
-        model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=20000, nb_epoch=10)
+        filepath = "checkpoints/{}/weights.{epoch:02d}-{val_loss:.2f}.hdf5".format(self.mode)
+        checkpoint = ModelCheckpoint(filepath, monitor='val_loss')
+        callbacks_list = [checkpoint]
+
+        self.model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=1000, nb_epoch=100, callbacks=callbacks_list)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)
