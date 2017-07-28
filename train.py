@@ -29,12 +29,14 @@ def get_latest_checkpoint(checkpoint_dir):
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--id', default=0,type=int)
+parser.add_argument('--id', default="0")
 parser.add_argument("--mode", required=True, help="softmax, sigmoid, etc")
 parser.add_argument('--resume', action='store_true', default=False)
 args = parser.parse_args()
 
-project = "local"
+os.environ["CUDA_VISIBLE_DEVICES"] = args.id
+
+project = "ade20k"
 mode = args.mode
 config = utils.get_config(project)
 datasource = DataSource(config, random=True)

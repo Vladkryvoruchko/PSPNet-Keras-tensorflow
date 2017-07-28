@@ -3,7 +3,7 @@ from keras.layers import BatchNormalization, Activation, Input, Dropout, ZeroPad
 from keras.layers import merge, concatenate, Lambda, Reshape
 from keras.models import Model
 from keras.regularizers import l2
-from keras.optimizers import Adam
+from keras.optimizers import SGD
 
 from keras.utils import plot_model
 import tensorflow as tf

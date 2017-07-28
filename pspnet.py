@@ -133,6 +133,8 @@ if __name__ == "__main__":
     parser.add_argument('--output_path', type=str, default='', required=True, help='Path to output')
     args = parser.parse_args()
 
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
     sess = tf.Session()
     K.set_session(sess)
 
