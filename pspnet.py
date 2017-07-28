@@ -36,9 +36,11 @@ class PSPNet:
         while True:
             im = self.datasource.next_im()
             print im
+            t = time.time()
             img = self.datasource.get_image(im)
             gt = self.datasource.get_ground_truth(im)
             data,label = image_processor.build_data_and_label(img, gt)
+            print time.time() - t
             print data.shape, label.shape
             yield (data,label)
 
@@ -53,7 +55,7 @@ class PSPNet:
         self.model.compile(optimizer=adam,
               loss='categorical_crossentropy',
               metrics=['accuracy'])
-        self.model.fit_generator(self.generator(), 1000, epochs=100, callbacks=callbacks_list)
+        self.model.fit_generator(self.generator(), 1000, epochs=100, verbose=2, callbacks=callbacks_list, use_multiprocessing=False)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)

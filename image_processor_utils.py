@@ -24,7 +24,7 @@ def crop_image(img, box):
 
 def crop_ground_truth(gt, box):
     sh,eh,sw,ew = box
-    crop = np.zeros((INPUT_SIZE,INPUT_SIZE), dtype=int)
+    crop = np.zeros((INPUT_SIZE,INPUT_SIZE, NUM_CLASS), dtype=int)
     crop[0:eh-sh,0:ew-sw] = gt[sh:eh,sw:ew]
     return crop
 

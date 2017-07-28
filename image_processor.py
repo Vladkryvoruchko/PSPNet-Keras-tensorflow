@@ -19,6 +19,9 @@ def build_data_and_label(img, gt):
     img = crop_image(img, box)
     gt = crop_ground_truth(gt, box)
 
+    #if np.ndim(gt) == 2:
+    #    gt = gt[..., np.newaxis]
+
     # Batch size of 1
     data = img[np.newaxis, ...]
     label = gt[np.newaxis, ...]

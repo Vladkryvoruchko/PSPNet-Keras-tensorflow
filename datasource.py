@@ -10,7 +10,7 @@ import utils
 NUM_CLASS = 150
 
 class DataSource:
-    def __init__(self, config, random=True, mode="softmax"):
+    def __init__(self, config, random=True, mode="sigmoid"):
         self.image_dir = config["images"]
         self.ground_truth_dir = config["ground_truth"]
 
