@@ -55,7 +55,8 @@ class PSPNet:
         self.model.compile(optimizer=adam,
               loss='categorical_crossentropy',
               metrics=['accuracy'])
-        self.model.fit_generator(self.generator(), 1000, epochs=100, verbose=2, callbacks=callbacks_list, use_multiprocessing=False)
+        self.model.fit_generator(self.generator(), 1000, epochs=100, callbacks=callbacks_list,
+                 verbose=2, workers=8, use_multiprocessing=True)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)
