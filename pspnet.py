@@ -22,10 +22,10 @@ class PSPNet:
         self.model = layers.build_pspnet()
         set_weights(self.model)
 
-        self.prefetcher = PreFetcher(datasource)
+    #     self.prefetcher = PreFetcher(datasource)
 
-    def train(self):
-        model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=20000, nb_epoch=10)
+    # def train(self):
+    #     model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=20000, nb_epoch=10)
 
     def predict_sliding_window(self, img):
         patches = image_processor.sliding_window(img)
@@ -44,9 +44,10 @@ class PSPNet:
         '''
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
+        print_array(data)
 
         self.debug(data)
-        pred = model.predict(data, batch_size=1)
+        pred = self.model.predict(data, batch_size=1)
         return pred
 
     def debug(self, data):
@@ -58,9 +59,9 @@ def print_activation(model, layer_name, data):
     intermediate_layer_model = Model(inputs=model.input,
                                      outputs=model.get_layer(layer_name).output)
     io = intermediate_layer_model.predict(data)
-    print layer_name, np_to_str(io)
+    print layer_name, print_array(io)
 
-def np_to_str(a):
+def print_array(a):
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a), np.max(a), np.mean(a))
 
 def set_weights(model):
@@ -103,6 +104,7 @@ if __name__ == "__main__":
 
         img = misc.imread(args.input_path)
         img = misc.imresize(img, (473, 473))
+        print_array(img)
 
         probs = pspnet.predict_sliding_window(img)
         print probs.shape

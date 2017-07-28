@@ -207,5 +207,5 @@ def build_pspnet():
     reshape = Reshape((curr_width, curr_height, curr_channels))(activation)
 
     model = Model(inputs=inp, outputs=reshape)
-    plot_model(model, to_file='model.png', show_shapes=True)
+    # plot_model(model, to_file='model.png', show_shapes=True)
     return model
