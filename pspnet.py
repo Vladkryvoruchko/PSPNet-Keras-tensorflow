@@ -22,10 +22,10 @@ class PSPNet:
         self.model = layers.build_pspnet()
         set_weights(self.model)
 
-    #     self.prefetcher = PreFetcher(datasource)
+        self.prefetcher = PreFetcher(datasource)
 
-    # def train(self):
-    #     model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=20000, nb_epoch=10)
+    def train(self):
+        model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=20000, nb_epoch=10)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)
@@ -58,7 +58,7 @@ class PSPNet:
 
     def debug(self, data):
         names = [layer.name for layer in self.model.layers]
-        for name in names[-20:]:
+        for name in names[-12:]:
             print_activation(self.model, name, data)
 
 def print_activation(model, layer_name, data):
