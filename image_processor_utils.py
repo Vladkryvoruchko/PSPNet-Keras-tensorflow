@@ -114,6 +114,6 @@ def scale(a, shape):
     else:
         # Ground truth, use nearest
         if np.ndim(a) == 2:
-            return ndimage.zoom(data, (r_h,r_w), order=0, prefilter=False)
+            return ndimage.zoom(a, (r_h,r_w), order=0, prefilter=False)
         else:
-            return ndimage.zoom(data, (r_h,r_w,1.), order=0, prefilter=False)
+            return ndimage.zoom(a, (r_h,r_w,1.), order=0, prefilter=False)

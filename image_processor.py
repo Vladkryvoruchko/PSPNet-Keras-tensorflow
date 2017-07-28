@@ -12,7 +12,7 @@ def build_data_and_label(img, gt):
     img = preprocess(img)
 
     img = scale_maxside(img, maxside=512)
-    gt = scale_maxside(img, maxside=512)
+    gt = scale_maxside(gt, maxside=512)
     
     # Random crop
     box = random_crop(img)

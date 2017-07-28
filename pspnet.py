@@ -7,6 +7,7 @@ from scipy import misc
 
 from keras import backend as K
 from keras.models import Model
+from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 
@@ -27,15 +28,31 @@ class PSPNet:
         elif self.mode == "sigmoid":
             self.model = layers.build_pspnet_sigmoid()
 
-        set_weights(self.model)
+        #set_weights(self.model)
+        self.datasource = datasource
         self.prefetcher = PreFetcher(datasource)
 
+    def generator(self):
+        im = self.datasource.next_im()
+        print im
+        img = self.datasource.get_image(im)
+        gt = self.datasource.get_ground_truth(im)
+        data,label = image_processor.build_data_and_label(img, gt)
+        print data.shape, label.shape
+        return data,label
+
     def train(self):
-        filepath = "checkpoints/{}/weights.{epoch:02d}-{val_loss:.2f}.hdf5".format(self.mode)
+        path = "checkpoints/{}".format(self.mode)
+        fn = "weights.{epoch:02d}-{val_loss:.2f}.hdf5"
+        filepath = os.path.join(path, fn)
         checkpoint = ModelCheckpoint(filepath, monitor='val_loss')
         callbacks_list = [checkpoint]
-
-        self.model.fit_generator(self.prefetcher.fetch_batch(), samples_per_epoch=1000, nb_epoch=100, callbacks=callbacks_list)
+        
+        adam = Adam(lr=1e-5)
+        self.model.compile(optimizer=adam,
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+        self.model.fit_generator(self.generator(), 1000, epochs=100, callbacks=callbacks_list)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)

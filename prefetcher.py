@@ -36,5 +36,6 @@ def build_train(d):
     img = datasource.get_image(im)
     gt = datasource.get_ground_truth(im)
     batch = image_processor.build_data_and_label(img, gt)
+    print batch[0].shape, batch[1].shape
     return batch
 
