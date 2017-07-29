@@ -207,6 +207,10 @@ def build_pspnet():
 
     model = Model(inputs=inp, outputs=reshape)
 
+    # Freeze
+    for layer in model.layers[:-10]:
+        layer.trainable = False
+
     # Solver
     sgd = SGD(lr=learning_rate, momentum=0.99, nesterov=True)
     model.compile(optimizer=sgd,

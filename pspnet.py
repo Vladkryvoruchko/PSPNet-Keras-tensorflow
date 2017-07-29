@@ -30,9 +30,9 @@ class PSPNet:
         else:
             # Build model
             self.mode = mode
-            if self.mode == "softmax":
+            if "softmax" in self.mode:
                 self.model = layers.build_pspnet()
-            elif self.mode == "sigmoid":
+            elif "sigmoid" in self.mode:
                 self.model = layers.build_pspnet_sigmoid()
             print "Loading original weights"
             set_weights(self.model)
