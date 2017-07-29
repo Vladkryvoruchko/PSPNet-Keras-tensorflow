@@ -90,7 +90,7 @@ class PSPNet:
 
     def debug(self, data):
         names = [layer.name for layer in self.model.layers]
-        for name in names[:]:
+        for name in names[-15:]:
             print_activation(self.model, name, data)
 
 
