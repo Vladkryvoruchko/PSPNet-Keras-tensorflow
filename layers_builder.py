@@ -8,7 +8,9 @@ from keras.optimizers import SGD
 from keras.utils import plot_model
 import tensorflow as tf
 
-weight_decay = l2(0.0005)
+learning_rate = 1e-3 # Could not implement variable learning rate
+weight_decay = 5e-4
+
 def BN(name="", trainable=False):
     return BatchNormalization(momentum=0.95, name=name, epsilon=1e-5, trainable=trainable)
 
@@ -206,9 +208,8 @@ def build_pspnet():
     model = Model(inputs=inp, outputs=reshape)
 
     # Solver
-    sgd = SGD(lr=1e-3, momentum=0.99, nesterov=True)
+    sgd = SGD(lr=learning_rate, momentum=0.99, nesterov=True)
     model.compile(optimizer=sgd,
                     loss='categorical_crossentropy',
                     metrics=['accuracy'])
-    # plot_model(model, to_file='model.png', show_shapes=True)
     return model
