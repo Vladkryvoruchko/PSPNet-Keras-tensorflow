@@ -189,7 +189,7 @@ def build_pspnet():
     psp = PSPNet(res)
 
     x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", name="conv5_4", use_bias=False, kernel_regularizer=l2(weight_decay))(psp)
-    x = BN(name="conv5_4_bn", trainable=True)(x)
+    x = BN(name="conv5_4_bn")(x)
     x = Activation('relu')(x)
     x = Dropout(0.1)(x)
 
