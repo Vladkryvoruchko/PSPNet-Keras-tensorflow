@@ -12,13 +12,13 @@ import tensorflow as tf
 
 import layers_builder as layers
 import image_processor
-from datasource import DataSource
+import utils
 
 WEIGHTS = 'pspnet50_ade20k.npy'
 
 class PSPNet:
 
-    def __init__(self, datasource, mode="softmax", ckpt=None):
+    def __init__(self, datasource, ckpt=None, mode=None):
         # Data source
         self.datasource = datasource
 
@@ -90,7 +90,7 @@ class PSPNet:
 
     def debug(self, data):
         names = [layer.name for layer in self.model.layers]
-        for name in names[-15:]:
+        for name in names[-10:]:
             print_activation(self.model, name, data)
 
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     K.set_session(sess)
 
     with sess.as_default():
-        pspnet = PSPNet(None)
+        pspnet = PSPNet(None, mode="softmax")
 
         img = misc.imread(args.input_path)
         print array_to_str(img)

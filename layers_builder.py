@@ -9,8 +9,8 @@ from keras.utils import plot_model
 import tensorflow as tf
 
 weight_decay = l2(0.0005)
-def BN(name=""):
-    return BatchNormalization(momentum=0.95, name=name, epsilon=1e-5, trainable=False)
+def BN(name="", trainable=False):
+    return BatchNormalization(momentum=0.95, name=name, epsilon=1e-5, trainable=trainable)
 
 def Interp(x, size=(60,60)):
     new_height = size[0]
@@ -37,19 +37,19 @@ def residual_conv(prev, level, pad=1, lvl=1, sub_lvl=1, modify_stride=False):
             "conv"+lvl+"_"+ sub_lvl +"_1x1_increase",
             "conv"+lvl+"_"+ sub_lvl +"_1x1_increase_bn"]
     if modify_stride == False:
-        prev = Conv2D(64 * level, (1,1), strides=(1,1), use_bias=False, name=names[0])(prev)
+        prev = Conv2D(64 * level, (1,1), strides=(1,1), name=names[0], use_bias=False, kernel_regularizer=l2(weight_decay))(prev)
     elif modify_stride == True:
-        prev = Conv2D(64 * level, (1,1), strides=(2,2), use_bias=False, name=names[0])(prev)
+        prev = Conv2D(64 * level, (1,1), strides=(2,2), name=names[0], use_bias=False, kernel_regularizer=l2(weight_decay))(prev)
 
     prev = BN(name=names[1])(prev)
     prev = Activation('relu')(prev)
 
     prev = ZeroPadding2D(padding=(pad,pad))(prev)
-    prev = Conv2D(64 * level, (3,3), strides=(1,1), dilation_rate=pad, use_bias=False, name=names[2])(prev)
+    prev = Conv2D(64 * level, (3,3), strides=(1,1), dilation_rate=pad, name=names[2], use_bias=False, kernel_regularizer=l2(weight_decay))(prev)
 
     prev = BN(name=names[3])(prev)
     prev = Activation('relu')(prev)
-    prev = Conv2D(256 * level, (1,1), strides=(1,1), use_bias=False, name=names[4])(prev)
+    prev = Conv2D(256 * level, (1,1), strides=(1,1), name=names[4], use_bias=False, kernel_regularizer=l2(weight_decay))(prev)
     prev = BN(name=names[5])(prev)
     return prev
 
@@ -60,9 +60,9 @@ def short_convolution_branch(prev, level, lvl=1, sub_lvl=1, modify_stride=False)
             "conv"+lvl+"_"+ sub_lvl +"_1x1_proj_bn"]
 
     if modify_stride == False:      
-        prev = Conv2D(256 * level ,(1,1), strides=(1,1), use_bias=False, name=names[0])(prev)
+        prev = Conv2D(256 * level ,(1,1), strides=(1,1), name=names[0], use_bias=False, kernel_regularizer=l2(weight_decay))(prev)
     elif modify_stride == True:
-        prev = Conv2D(256 * level, (1,1), strides=(2,2), use_bias=False, name=names[0])(prev)
+        prev = Conv2D(256 * level, (1,1), strides=(2,2), name=names[0], use_bias=False, kernel_regularizer=l2(weight_decay))(prev)
 
     prev = BN(name=names[1])(prev)
     return prev
@@ -101,15 +101,15 @@ def ResNet(inp):
 
     #---Short branch(only start of network)
 
-    cnv1 = Conv2D(64, (3, 3), strides=(2, 2), padding='same', use_bias=False, name=names[0])(inp) # "conv1_1_3x3_s2"
+    cnv1 = Conv2D(64, (3, 3), strides=(2, 2), padding='same', name=names[0], use_bias=False, kernel_regularizer=l2(weight_decay))(inp) # "conv1_1_3x3_s2"
     bn1 = BN(name=names[1])(cnv1)  # "conv1_1_3x3_s2/bn"
     relu1 = Activation('relu')(bn1)             #"conv1_1_3x3_s2/relu"
 
-    cnv1 = Conv2D(64, (3, 3), strides=(1, 1), padding='same', use_bias=False, name=names[2])(relu1) #"conv1_2_3x3"
+    cnv1 = Conv2D(64, (3, 3), strides=(1, 1), padding='same', name=names[2], use_bias=False, kernel_regularizer=l2(weight_decay))(relu1) #"conv1_2_3x3"
     bn1 = BN(name=names[3])(cnv1)  #"conv1_2_3x3/bn"
     relu1 = Activation('relu')(bn1)                 #"conv1_2_3x3/relu"
 
-    cnv1 = Conv2D(128, (3, 3), strides=(1, 1), padding='same', use_bias=False, name=names[4])(relu1) #"conv1_3_3x3"
+    cnv1 = Conv2D(128, (3, 3), strides=(1, 1), padding='same', name=names[4], use_bias=False, kernel_regularizer=l2(weight_decay))(relu1) #"conv1_3_3x3"
     bn1 = BN(name=names[5])(cnv1)      #"conv1_3_3x3/bn"
     relu1 = Activation('relu')(bn1)             #"conv1_3_3x3/relu"
 
@@ -157,7 +157,7 @@ def interp_block(prev_layer, level, str_lvl=1):
     kernel = (10*level, 10*level)
     strides = (10*level, 10*level)
     prev_layer = AveragePooling2D(kernel,strides=strides)(prev_layer)
-    prev_layer = Conv2D(512, (1,1), strides=(1,1), use_bias=False, name=names[0])(prev_layer)
+    prev_layer = Conv2D(512, (1,1), strides=(1,1), name=names[0], use_bias=False, kernel_regularizer=l2(weight_decay))(prev_layer)
     prev_layer = BN(name=names[1])(prev_layer)
     prev_layer = Activation('relu')(prev_layer)
     prev_layer = Lambda(Interp)(prev_layer)
@@ -188,8 +188,8 @@ def build_pspnet():
     res = ResNet(inp)
     psp = PSPNet(res)
 
-    x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", use_bias=False, name="conv5_4")(psp)
-    x = BatchNormalization(momentum=0.95, name="conv5_4_bn", epsilon=1e-5)(x)
+    x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", name="conv5_4", use_bias=False, kernel_regularizer=l2(weight_decay))(psp)
+    x = BN(name="conv5_4_bn", trainable=True)(x)
     x = Activation('relu')(x)
     x = Dropout(0.1)(x)
 
@@ -206,9 +206,8 @@ def build_pspnet():
     model = Model(inputs=inp, outputs=reshape)
 
     # Solver
-    adam = SGD(lr=1e-3, momentum=0.99, nesterov=True)
-
-    model.compile(optimizer=adam,
+    sgd = SGD(lr=1e-3, momentum=0.99, nesterov=True)
+    model.compile(optimizer=sgd,
                     loss='categorical_crossentropy',
                     metrics=['accuracy'])
     # plot_model(model, to_file='model.png', show_shapes=True)
