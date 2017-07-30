@@ -8,7 +8,7 @@ from keras.optimizers import SGD
 from keras.utils import plot_model
 import tensorflow as tf
 
-learning_rate = 1e-3 # Could not implement variable learning rate
+learning_rate = 1e-2 # Could not implement variable learning rate
 weight_decay = 5e-4
 
 def BN(name="", trainable=False):
@@ -195,25 +195,20 @@ def build_pspnet():
     x = Activation('relu')(x)
     x = Dropout(0.1)(x)
 
-    x = Conv2D(150, (1, 1), strides=(1, 1), name="conv6")(x)
+    x = Conv2D(150, (1, 1), strides=(1, 1), name="conv6", use_bias=False, kernel_regularizer=l2(weight_decay))(x)
     x = Lambda(Interp_zoom)(x)
 
-    #Use softmax layer for pixelwise prediction
-    curr_width, curr_height, curr_channels = x._shape_as_list()[1:]
+    activation = Activation('sigmoid')(x)
 
-    reshape = Reshape((curr_width*curr_height, curr_channels))(x)
-    activation = Activation('softmax')(reshape)
-    reshape = Reshape((curr_width, curr_height, curr_channels))(activation)
-
-    model = Model(inputs=inp, outputs=reshape)
+    model = Model(inputs=inp, outputs=x)
 
     # Freeze
-    for layer in model.layers[:-10]:
-        layer.trainable = False
+    #for layer in model.layers[:-7]:
+    #    layer.trainable = False
 
     # Solver
-    sgd = SGD(lr=learning_rate, momentum=0.99, nesterov=True)
+    sgd = SGD(lr=learning_rate, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd,
-                    loss='categorical_crossentropy',
+                    loss='binary_crossentropy',
                     metrics=['accuracy'])
     return model

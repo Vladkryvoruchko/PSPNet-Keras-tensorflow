@@ -33,7 +33,7 @@ class PSPNet:
             if "softmax" in self.mode:
                 self.model = layers.build_pspnet()
             elif "sigmoid" in self.mode:
-                self.model = layers.build_pspnet_sigmoid()
+                self.model = layers.build_pspnet()
             print "Loading original weights"
             set_weights(self.model)
 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         probs = pspnet.predict(img)
         print probs.shape
 
-        cm = np.argmax(probs, axis=2) + 1
+        cm = np.argmax(probs[0], axis=2) + 1
         color_cm = utils.add_color(cm)
         misc.imsave(args.output_path, color_cm)
 
