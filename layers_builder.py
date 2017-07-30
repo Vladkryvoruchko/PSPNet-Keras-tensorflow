@@ -172,14 +172,14 @@ def PSPNet(res):
     interp_block1 = interp_block(res, 6, str_lvl=1)
     interp_block2 = interp_block(res, 3, str_lvl=2)
     interp_block3 = interp_block(res, 2, str_lvl=3)
-    interp_block4 = interp_block(res, 1, str_lvl=6)
+    interp_block6 = interp_block(res, 1, str_lvl=6)
 
     #concat all these layers by 4th axis(3+1).  resulted shape=(1,60,60,4096)
     res = concatenate([res,
-                    interp_block1,
-                    interp_block2,
+                    interp_block6,
                     interp_block3,
-                    interp_block4], axis=3)
+                    interp_block2,
+                    interp_block1], axis=3)
     return res
 
 def build_pspnet():
@@ -198,7 +198,7 @@ def build_pspnet():
     x = Conv2D(150, (1, 1), strides=(1, 1), name="conv6", use_bias=False, kernel_regularizer=l2(weight_decay))(x)
     x = Lambda(Interp_zoom)(x)
 
-    activation = Activation('sigmoid')(x)
+    activation = Activation('softmax')(x)
 
     model = Model(inputs=inp, outputs=x)
 

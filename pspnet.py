@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import h5py
 import argparse
 import numpy as np
 from scipy import misc
@@ -83,25 +84,8 @@ class PSPNet:
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
 
-        self.debug(data)
-
-        pred = self.model.predict(data, batch_size=1)
+        pred = self.model.predict(data)
         return pred
-
-    def debug(self, data):
-        names = [layer.name for layer in self.model.layers]
-        for name in names[-10:]:
-            print_activation(self.model, name, data)
-
-
-
-def print_activation(model, layer_name, data):
-    intermediate_layer_model = Model(inputs=model.input,
-                                     outputs=model.get_layer(layer_name).output)
-    io = intermediate_layer_model.predict(data)
-    print layer_name, array_to_str(io)
-def array_to_str(a):
-    return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a), np.max(a), np.mean(a))
 
 def set_weights(model):
     weights = np.load(WEIGHTS).item()
@@ -123,7 +107,6 @@ def set_weights(model):
             except Exception as err:
                 biases = weights[layer.name]['biases']
                 model.get_layer(layer.name).set_weights([weight, biases])
-
     print 'Finished.'
     return model
 
@@ -139,13 +122,10 @@ if __name__ == "__main__":
     K.set_session(sess)
 
     with sess.as_default():
-        pspnet = PSPNet(None, mode="softmax")
-
         img = misc.imread(args.input_path)
-        print array_to_str(img)
 
+        pspnet = PSPNet(None, mode="softmax")
         probs = pspnet.predict(img)
-        print probs.shape
 
         cm = np.argmax(probs[0], axis=2) + 1
         color_cm = utils.add_color(cm)
