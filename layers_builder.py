@@ -8,7 +8,7 @@ from keras.optimizers import SGD
 from keras.utils import plot_model
 import tensorflow as tf
 
-learning_rate = 1e-2 # Could not implement variable learning rate
+learning_rate = 1e-4 # Could not implement variable learning rate
 weight_decay = 5e-4
 
 def BN(name="", trainable=False):
@@ -198,17 +198,19 @@ def build_pspnet():
     x = Conv2D(150, (1, 1), strides=(1, 1), name="conv6", use_bias=False, kernel_regularizer=l2(weight_decay))(x)
     x = Lambda(Interp_zoom)(x)
 
-    activation = Activation('softmax')(x)
-
+    #x = Activation('softmax')(x)
+    x = Activation('sigmoid')(x)
     model = Model(inputs=inp, outputs=x)
 
     # Freeze
-    #for layer in model.layers[:-7]:
-    #    layer.trainable = False
+    for layer in model.layers[:-7]:
+        print layer.name
+        layer.trainable = False
 
     # Solver
     sgd = SGD(lr=learning_rate, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd,
+                    #loss='categorical_crossentropy',
                     loss='binary_crossentropy',
                     metrics=['accuracy'])
     return model

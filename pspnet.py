@@ -41,12 +41,12 @@ class PSPNet:
     def generator(self):
         while True:
             im = self.datasource.next_im()
-            print im
+            #print im
             t = time.time()
             img = self.datasource.get_image(im)
             gt = self.datasource.get_ground_truth(im)
             data,label = image_processor.build_data_and_label(img, gt)
-            print time.time() - t
+            #print time.time() - t
             yield (data,label)
 
     def train(self):
@@ -74,7 +74,7 @@ class PSPNet:
         img = misc.imresize(img, (473, 473))
         img = image_processor.preprocess(img)
         probs = self.feed_forward(img)
-        return probs
+        return probs[0]
 
     def feed_forward(self, data):
         '''
@@ -125,9 +125,10 @@ if __name__ == "__main__":
         img = misc.imread(args.input_path)
 
         pspnet = PSPNet(None, mode="softmax")
-        probs = pspnet.predict(img)
+        #probs = pspnet.predict(img)
+        probs = pspnet.predict_sliding_window(img)
 
-        cm = np.argmax(probs[0], axis=2) + 1
+        cm = np.argmax(probs, axis=2) + 1
         color_cm = utils.add_color(cm)
         misc.imsave(args.output_path, color_cm)
 
