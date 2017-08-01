@@ -4,7 +4,7 @@ import random
 import h5py
 import numpy as np
 from scipy import misc
-
+from keras.utils import to_categorical
 import utils
 
 NUM_CLASS = 150
@@ -42,5 +42,11 @@ class DataSource:
         gt_path = os.path.join(self.ground_truth_dir, im.replace('.jpg', '.png'))
         gt = misc.imread(gt_path)
         gt = (np.arange(NUM_CLASS) == gt[:,:,None] - 1)
+        
+        #gt = gt.astype(int)
+        #for i in xrange(NUM_CLASS):
+        #    if np.sum(gt[:,:,i]) == 0:
+        #        gt[:,:,i] = -1
+        #print np.min(gt), np.max(gt), np.mean(gt)
         return gt
 

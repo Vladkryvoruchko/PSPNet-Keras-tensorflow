@@ -8,7 +8,7 @@ from keras.optimizers import SGD
 from keras.utils import plot_model
 import tensorflow as tf
 
-learning_rate = 1e-2 # Could not implement variable learning rate
+learning_rate = 1e-1 # Could not implement variable learning rate
 weight_decay = 5e-4
 
 def BN(name=""):
@@ -200,7 +200,7 @@ def build_pspnet(activation='softmax'):
     x = Activation('relu')(x)
     x = Dropout(0.1)(x)
 
-    x = Conv2D(150, (1, 1), strides=(1, 1), name="conv6", use_bias=False, kernel_regularizer=l2(weight_decay))(x)
+    x = Conv2D(150, (1, 1), strides=(1, 1), name="conv6", kernel_regularizer=l2(weight_decay))(x)
     x = Lambda(Interp_zoom)(x)
 
     loss = None
