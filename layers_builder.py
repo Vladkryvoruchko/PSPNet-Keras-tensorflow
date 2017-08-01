@@ -8,11 +8,11 @@ from keras.optimizers import SGD
 from keras.utils import plot_model
 import tensorflow as tf
 
-learning_rate = 1e-4 # Could not implement variable learning rate
+learning_rate = 1e-2 # Could not implement variable learning rate
 weight_decay = 5e-4
 
-def BN(name="", trainable=False):
-    return BatchNormalization(momentum=0.95, name=name, epsilon=1e-5, trainable=trainable)
+def BN(name=""):
+    return BatchNormalization(momentum=0.95, name=name, epsilon=1e-5)
 
 def Interp(x, size=(60,60)):
     new_height = size[0]
@@ -182,13 +182,18 @@ def PSPNet(res):
                     interp_block1], axis=3)
     return res
 
-def build_pspnet():
+def build_pspnet(activation='softmax'):
     '''
     Normal PSPNet. Consistent up to conv5_4
     '''
     inp = Input((473,473, 3))
     res = ResNet(inp)
     psp = PSPNet(res)
+
+    # Freeze
+    features = Model(inputs=inp, outputs=psp)
+    for layer in features.layers:
+        layer.trainable = False
 
     x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", name="conv5_4", use_bias=False, kernel_regularizer=l2(weight_decay))(psp)
     x = BN(name="conv5_4_bn")(x)
@@ -198,19 +203,19 @@ def build_pspnet():
     x = Conv2D(150, (1, 1), strides=(1, 1), name="conv6", use_bias=False, kernel_regularizer=l2(weight_decay))(x)
     x = Lambda(Interp_zoom)(x)
 
-    #x = Activation('softmax')(x)
-    x = Activation('sigmoid')(x)
-    model = Model(inputs=inp, outputs=x)
+    loss = None
+    if activation == 'softmax':
+        x = Activation('softmax')(x)
+        loss = 'categorical_crossentropy'
+    elif activation == 'sigmoid':
+        x = Activation('sigmoid')(x)
+        loss = 'binary_crossentropy'
 
-    # Freeze
-    for layer in model.layers[:-7]:
-        print layer.name
-        layer.trainable = False
+    model = Model(inputs=inp, outputs=x)
 
     # Solver
     sgd = SGD(lr=learning_rate, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd,
-                    #loss='categorical_crossentropy',
-                    loss='binary_crossentropy',
+                    loss=loss,
                     metrics=['accuracy'])
     return model

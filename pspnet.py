@@ -24,17 +24,19 @@ class PSPNet:
         self.datasource = datasource
 
         if ckpt is not None:
-            print "Loading ", ckpt
+            print "Loading from checkpoint:", ckpt
             self.model = load_model(ckpt, custom_objects={'Interp': layers.Interp,
                                                             'Interp_zoom': layers.Interp_zoom,
                                                             'tf': tf})
         else:
+            print "Building model"
             # Build model
             self.mode = mode
             if "softmax" in self.mode:
-                self.model = layers.build_pspnet()
+                self.model = layers.build_pspnet(activation="softmax")
             elif "sigmoid" in self.mode:
-                self.model = layers.build_pspnet()
+                self.model = layers.build_pspnet(activation="sigmoid")
+
             print "Loading original weights"
             set_weights(self.model)
 
@@ -84,8 +86,27 @@ class PSPNet:
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
 
+        #debug(self.model, data)
         pred = self.model.predict(data)
         return pred
+
+
+def debug(model, data):
+    names = [layer.name for layer in model.layers]
+    for name in names[:]:
+        print_activation(model, name, data)
+
+def print_activation(model, layer_name, data):
+    intermediate_layer_model = Model(inputs=model.input,
+                                     outputs=model.get_layer(layer_name).output)
+    io = intermediate_layer_model.predict(data)
+    print layer_name, array_to_str(io)
+    if layer_name == "concatenate_1":
+        print "Saving", layer_name
+        with h5py.File("keras.h5", 'w') as f:
+            f.create_dataset('a', data=io)
+def array_to_str(a):
+    return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a), np.max(a), np.mean(a))
 
 def set_weights(model):
     weights = np.load(WEIGHTS).item()
@@ -114,9 +135,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_path', type=str, default='', required=True, help='Path the input image')
     parser.add_argument('--output_path', type=str, default='', required=True, help='Path to output')
+    parser.add_argument('--checkpoint', type=str, help='Checkpoint')
+    parser.add_argument('--id', default="0")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.id
 
     sess = tf.Session()
     K.set_session(sess)
@@ -124,9 +147,9 @@ if __name__ == "__main__":
     with sess.as_default():
         img = misc.imread(args.input_path)
 
-        pspnet = PSPNet(None, mode="softmax")
-        #probs = pspnet.predict(img)
-        probs = pspnet.predict_sliding_window(img)
+        pspnet = PSPNet(None, mode="softmax", ckpt=args.checkpoint)
+        probs = pspnet.predict(img)
+        #probs = pspnet.predict_sliding_window(img)
 
         cm = np.argmax(probs, axis=2) + 1
         color_cm = utils.add_color(cm)
