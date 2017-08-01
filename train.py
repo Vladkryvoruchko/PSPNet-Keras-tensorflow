@@ -16,16 +16,16 @@ def get_latest_checkpoint(checkpoint_dir):
     # weights.00-1.52.hdf5
     latest_i = -1
     latest_fn = ""
-    for fn in os.path.listdir(checkpoint_dir):
+    for fn in os.listdir(checkpoint_dir):
         split0 = fn.split('-')[0]
         i = int(split0.split('.')[1])
         if i > latest_i:
             latest_i = i
-            latest_fn = fname
+            latest_fn = fn
 
     if latest_i == -1:
         raise Exception("No checkpoint found.")
-    return os.path.join(checkpoint_dir, latest_fn)
+    return os.path.join(checkpoint_dir, latest_fn), latest_i+1
 
 
 parser = argparse.ArgumentParser()
@@ -42,13 +42,14 @@ config = utils.get_config(project)
 datasource = DataSource(config, random=True)
 
 checkpoint = None
+epoch = 0
 if args.resume:
     checkpoint_dir = "checkpoints/{}/".format(mode)
-    checkpoint = get_latest_checkpoint(checkpoint_dir)
+    checkpoint,epoch = get_latest_checkpoint(checkpoint_dir)
 
 
 sess = tf.Session()
 K.set_session(sess)
 with sess.as_default():
     pspnet = PSPNet(datasource, mode=mode, ckpt=checkpoint)
-    pspnet.train()
+    pspnet.train(initial_epoch=epoch)

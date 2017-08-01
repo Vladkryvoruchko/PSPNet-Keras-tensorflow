@@ -22,7 +22,7 @@ class PSPNet:
     def __init__(self, datasource, ckpt=None, mode=None):
         # Data source
         self.datasource = datasource
-
+        self.mode = mode
         if ckpt is not None:
             print "Loading from checkpoint:", ckpt
             self.model = load_model(ckpt, custom_objects={'Interp': layers.Interp,
@@ -31,7 +31,6 @@ class PSPNet:
         else:
             print "Building model"
             # Build model
-            self.mode = mode
             if "softmax" in self.mode:
                 self.model = layers.build_pspnet(activation="softmax")
             elif "sigmoid" in self.mode:
@@ -51,7 +50,7 @@ class PSPNet:
             #print time.time() - t
             yield (data,label)
 
-    def train(self):
+    def train(self, initial_epoch=0):
         path = "checkpoints/{}".format(self.mode)
         fn = "weights.{epoch:02d}-{loss:.2f}.hdf5"
         filepath = os.path.join(path, fn)
@@ -59,7 +58,7 @@ class PSPNet:
         callbacks_list = [checkpoint]
         
         self.model.fit_generator(self.generator(), 1000, epochs=100, callbacks=callbacks_list,
-                 verbose=1, workers=1)
+                 verbose=1, workers=1, initial_epoch=initial_epoch)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)
@@ -113,6 +112,8 @@ def set_weights(model):
 
     for layer in model.layers:
         print layer.name
+        if layer.name == "conv5_4":
+            break
         if layer.name[:4] == 'conv' and layer.name[-2:] == 'bn':
             mean = weights[layer.name]['mean'].reshape(-1)
             variance = weights[layer.name]['variance'].reshape(-1)
