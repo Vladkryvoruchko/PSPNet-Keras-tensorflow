@@ -20,7 +20,7 @@ Interpolation layer is implemented in code as custom layer "Interp"
 
 ## Important
 
-This repo is forked from [Vladkryvoruchko/PSPNet-Keras-tensorflow](https://github.com/Vladkryvoruchko/PSPNet-Keras-tensorflow) and repaired some issues. But the result is not as well as expected. Here is an example of current code:
+Was repaired some issues. But the result is not as well as expected compared to pycaffe code of PSPNet. Here is an example of current code:
 ![Original](test.jpg)
 ![Processed](test_seg.jpg)
 ![Alpha mixed](test_seg_blended.jpg)
