@@ -44,7 +44,7 @@ def residual_conv(prev, level,
 		prev = Conv2D(64 * level, (1,1), strides=(2,2), use_bias=False,
 					name=names[0])(prev)
 
-	prev = BatchNormalization(momentum=0.95, name=names[1])(prev)
+	prev = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(prev)
 	prev = Activation('relu')(prev)
 
 	prev = ZeroPadding2D(padding=(pad,pad))(prev)
@@ -53,11 +53,11 @@ def residual_conv(prev, level,
 					name=names[2])(prev)
 	
 
-	prev = BatchNormalization(momentum=0.95, name=names[3])(prev)
+	prev = BatchNormalization(momentum=0.95, name=names[3], epsilon=1e-5)(prev)
 	prev = Activation('relu')(prev)
 	prev = Conv2D(256 * level, (1,1), strides=(1,1), use_bias=False,
 					name=names[4])(prev)
-	prev = BatchNormalization(momentum=0.95, name=names[5])(prev)
+	prev = BatchNormalization(momentum=0.95, name=names[5], epsilon=1e-5)(prev)
 	return prev
 
 
@@ -76,7 +76,7 @@ def short_convolution_branch(prev, level,
 		prev = Conv2D(256 * level, (1,1), strides=(2,2), use_bias=False,
 				name=names[0])(prev)
 
-	prev = BatchNormalization(momentum=0.95, name=names[1])(prev)
+	prev = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(prev)
 	return prev
 
 
@@ -85,7 +85,7 @@ def empty_branch(prev):
 
 
 def residual_short(prev_layer, level, pad=1, lvl=1, sub_lvl=1, modify_stride=False):
-
+	prev_layer = Activation('relu')(prev_layer)
 	block_1 = residual_conv(prev_layer, level,
 						pad=pad, lvl=lvl, sub_lvl=sub_lvl,
 						modify_stride=modify_stride)
@@ -119,7 +119,7 @@ def interp_block(prev_layer, level, str_lvl=1):
 	strides = (10*level, 10*level)
 	prev_layer = AveragePooling2D(kernel,strides=strides)(prev_layer)
 	prev_layer = Conv2D(512, (1,1), strides=(1,1), use_bias=False, name=names[0])(prev_layer)
-	prev_layer = BatchNormalization(momentum=0.95, name=names[1])(prev_layer)
+	prev_layer = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(prev_layer)
 	prev_layer = Activation('relu')(prev_layer)
 	prev_layer = Lambda(Interp)(prev_layer)
 	return prev_layer
@@ -141,19 +141,19 @@ def build_pspnet():
 	cnv1 = ZeroPadding2D(padding=(1,1))(inp)
 	cnv1 = Conv2D(64, (3, 3), strides=(2, 2), use_bias=False, name=names[0])(cnv1) # "conv1_1_3x3_s2"
 	
-	bn1 = BatchNormalization(momentum=0.95, name=names[1])(cnv1)  # "conv1_1_3x3_s2/bn"
+	bn1 = BatchNormalization(momentum=0.95, name=names[1], epsilon=1e-5)(cnv1)  # "conv1_1_3x3_s2/bn"
 	relu1 = Activation('relu')(bn1)				#"conv1_1_3x3_s2/relu"
 
 	cnv1 = ZeroPadding2D(padding=(1,1))(relu1)
 	cnv1 = Conv2D(64, (3, 3), strides=(1, 1), use_bias=False, name=names[2])(cnv1) #"conv1_2_3x3"
 	
-	bn1 = BatchNormalization(momentum=0.95, name=names[3])(cnv1)  #"conv1_2_3x3/bn"
+	bn1 = BatchNormalization(momentum=0.95, name=names[3], epsilon=1e-5)(cnv1)  #"conv1_2_3x3/bn"
 	relu1 = Activation('relu')(bn1) 				#"conv1_2_3x3/relu"
 
 	cnv1 = ZeroPadding2D(padding=(1,1))(relu1)
 	cnv1 = Conv2D(128, (3, 3), strides=(1, 1), use_bias=False, name=names[4])(cnv1) #"conv1_3_3x3"
 	
-	bn1 = BatchNormalization(momentum=0.95, name=names[5])(cnv1) 		#"conv1_3_3x3/bn"
+	bn1 = BatchNormalization(momentum=0.95, name=names[5], epsilon=1e-5)(cnv1) 		#"conv1_3_3x3/bn"
 	relu1 = Activation('relu')(bn1)				#"conv1_3_3x3/relu"
 
 	res = ZeroPadding2D(padding=(1,1))(relu1)
@@ -174,7 +174,7 @@ def build_pspnet():
 
 	#3_1 - 3_3
 	res = residual_short(res, 2, pad=1, lvl=3, sub_lvl=1, modify_stride=True) 
-	for i in range(2): 
+	for i in range(3): #for i in range(2): old wrong code 
 		res = residual_empty(res, 2, pad=1, lvl=3, sub_lvl=i+2) 
 
 	#4_1 - 4_6
@@ -206,7 +206,7 @@ def build_pspnet():
 	res = ZeroPadding2D(padding=(1,1))(res)
 	res = Conv2D(512, (3, 3), strides=(1, 1), use_bias=False, name="conv5_4")(res)
 	
-	res = BatchNormalization(momentum=0.95, name="conv5_4_bn")(res)
+	res = BatchNormalization(momentum=0.95, name="conv5_4_bn", epsilon=1e-5)(res)
 	res = Activation('relu')(res)
 	#res = Dropout(0.1)(res) #used only in training
 	res = Conv2D(150, (1, 1), strides=(1, 1), name="conv6")(res)

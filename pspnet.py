@@ -11,7 +11,7 @@ import time
 
 
 def load_weights():
-	w = np.load('pspnet.npy').item()
+	w = np.load('pspnet50_ade20k.npy').item()
 	return w
 
 
@@ -25,9 +25,16 @@ def set_weights(model, weights):
 			offset = weights[layer.name]['offset'].reshape(-1)
 			mean = weights[layer.name]['mean'].reshape(-1)
 			variance = weights[layer.name]['variance'].reshape(-1)
+
+			# mean *= scale
+			# variance *= scale
 			
-			model.get_layer(layer.name).set_weights([mean, variance,
-													scale, offset])
+			# model.get_layer(layer.name).set_weights([mean, variance,
+			# 										scale, offset])
+			model.get_layer(layer.name).set_weights([scale, offset,
+													mean, variance])
+			# model.get_layer(layer.name).set_weights([scale, offset,
+													# mean, variance])
 
 		elif layer.name[:4] == 'conv' and not layer.name[-4:] == 'relu':
 			print layer.name
@@ -52,7 +59,9 @@ if __name__ == "__main__":
 						required=True, help='Path to output')
 
 	settings, unparsed = parser.parse_known_args()
-
+	mean_r = 123.68
+	mean_g = 116.779
+	mean_b = 103.939
 
 	model = pspnet.build_pspnet()
 
@@ -67,34 +76,37 @@ if __name__ == "__main__":
 
 		#Load image, resize and paste into 4D tensor
 		image = Image.open(settings.input_path)
-		data_im = np.asarray(image)
+		im = image.resize((473, 473))
+		input_ = np.array(im, dtype=np.float32)
+		input_ = input_[:,:,::-1]
+		input_ -= np.array((mean_b, mean_g, mean_r))
 		data = np.zeros([1,473,473,3])
-		data_im = np.resize(data_im, [473, 473, 3])
 
-		data[0] = data_im
+		data[0] = input_
 
 		#predict
 		
 		startForward = time.time()
 		pred = model.predict(data, batch_size=1, verbose=0)
 		finishForward = (time.time() - startForward)
+		print "Time used: %f" % finishForward
+		# pred = np.transpose(pred[0], (2, 1, 0))
+		print np.shape(pred)
+		pred = pred[0]
+		predicted_classes = np.argmax(pred, axis=2)
 
-		pred = np.transpose(pred[0], (2, 1, 0))
-		predicted_classes = np.argmax(pred, axis=0)
+		proto = 'utils/model/pspnet.prototxt'
+		weights = 'utils/model/pspnet.caffemodel'
+		colors = 'utils/colorization/color150.mat'
+		objects = 'utils/colorization/objectName150.mat'
 
 
-	proto = 'utils/model/pspnet.prototxt'
-	weights = 'utils/model/pspnet.caffemodel'
-	colors = 'utils/colorization/color150.mat'
-	objects = 'utils/colorization/objectName150.mat'
-
-
-	im_Width = predicted_classes.shape[1]
-	im_Height = predicted_classes.shape[0]
-	draw = drawImage.BaseDraw(colors, objects,
-						image, (im_Width, im_Height),
-						predicted_classes)
-	simpleSegmentImage = draw.drawSimpleSegment();
-	simpleSegmentImage.save(settings.output_path,"JPEG")
+		im_Width = predicted_classes.shape[0]
+		im_Height = predicted_classes.shape[1]
+		draw = drawImage.BaseDraw(colors, objects,
+							image, (im_Width, im_Height),
+							predicted_classes)
+		simpleSegmentImage = draw.drawSimpleSegment();
+		simpleSegmentImage.save(settings.output_path,"JPEG")
 
 
