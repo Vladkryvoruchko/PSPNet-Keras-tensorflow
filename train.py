@@ -32,6 +32,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--id', default="0")
 parser.add_argument("--mode", required=True, help="softmax, sigmoid, etc")
 parser.add_argument('--resume', action='store_true', default=False)
+parser.add_argument('--weights', type=str, help="checkpoint file")
 args = parser.parse_args()
 
 os.environ["CUDA_VISIBLE_DEVICES"] = args.id
@@ -42,14 +43,25 @@ config = utils.get_config(project)
 datasource = DataSource(config, random=True)
 
 checkpoint = None
+checkpoint_dir = "checkpoints/{}".format(mode)
+if os.path.exists(checkpoint_dir):
+    os.mkdirs(checkpoint_dir)
+
 epoch = 0
 if args.resume:
-    checkpoint_dir = "checkpoints/{}/".format(mode)
     checkpoint,epoch = get_latest_checkpoint(checkpoint_dir)
 
 
 sess = tf.Session()
 K.set_session(sess)
 with sess.as_default():
-    pspnet = PSPNet(datasource, mode=mode, ckpt=checkpoint)
-    pspnet.train(initial_epoch=epoch)
+
+    pspnet = PSPNet(mode, ckpt=checkpoint)
+    if args.weights is not None:
+        pspnet.set_weights(args.weights)
+    if args.weights is None and checkpoint is None:
+        pspnet.load_default_weights()
+
+    pspnet.train(datasource, initial_epoch=epoch)
+
+

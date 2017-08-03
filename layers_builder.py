@@ -8,8 +8,11 @@ from keras.optimizers import SGD
 from keras.utils import plot_model
 import tensorflow as tf
 
-learning_rate = 1e-1 # Could not implement variable learning rate
-weight_decay = 5e-4
+'''
+sigmoid: lr = 1e-2
+'''
+learning_rate = 1e-3 # Could not implement variable learning rate
+weight_decay = 0#5e-4
 
 def BN(name=""):
     return BatchNormalization(momentum=0.95, name=name, epsilon=1e-5)
@@ -191,9 +194,9 @@ def build_pspnet(activation='softmax'):
     psp = PSPNet(res)
 
     # Freeze
-    features = Model(inputs=inp, outputs=psp)
-    for layer in features.layers:
-        layer.trainable = False
+    #features = Model(inputs=inp, outputs=psp)
+    #for layer in features.layers:
+    #    layer.trainable = False
 
     x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", name="conv5_4", use_bias=False, kernel_regularizer=l2(weight_decay))(psp)
     x = BN(name="conv5_4_bn")(x)

@@ -41,7 +41,7 @@ with sess.as_default():
     config = utils.get_config(project)
     random.seed(3)
     datasource = DataSource(config, random=False)
-    pspnet = PSPNet(datasource, mode=mode, ckpt=checkpoint)
+    pspnet = PSPNet(mode, ckpt=checkpoint)
 
     for im in datasource.im_list:
         print im

@@ -12,16 +12,13 @@ from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 
 import layers_builder as layers
+from datasource import DataSource
 import image_processor
 import utils
 
-WEIGHTS = 'pspnet50_ade20k.npy'
-
 class PSPNet:
 
-    def __init__(self, datasource, ckpt=None, mode=None):
-        # Data source
-        self.datasource = datasource
+    def __init__(self, mode, ckpt=None):
         self.mode = mode
         if ckpt is not None:
             print "Loading from checkpoint:", ckpt
@@ -36,28 +33,53 @@ class PSPNet:
             elif "sigmoid" in self.mode:
                 self.model = layers.build_pspnet(activation="sigmoid")
 
-            print "Loading original weights"
-            set_weights(self.model)
+    def set_weights(self, weights):
+        print "Loading from", weights
+        if '.h5' in weights or '.hdf5' in weights:
+            self.model.load_weights(weights)
+        elif '.npy' in weights:
+            set_npy_weights(self.model, weights)
+        else:
+            raise Exception('Weight file format not recognized.')
 
-    def generator(self):
+    def load_default_weights(self):
+        WEIGHTS = 'pspnet50_ade20k.npy'
+        self.set_weights(WEIGHTS)
+
+    def generator(datasource):
         while True:
-            im = self.datasource.next_im()
+            im = datasource.next_im()
             #print im
-            t = time.time()
-            img = self.datasource.get_image(im)
-            gt = self.datasource.get_ground_truth(im)
+            #t = time.time()
+            img = datasource.get_image(im)
+            gt = datasource.get_ground_truth(im)
             data,label = image_processor.build_data_and_label(img, gt)
             #print time.time() - t
             yield (data,label)
 
-    def train(self, initial_epoch=0):
+    def train(self, datasource, initial_epoch=0):
         path = "checkpoints/{}".format(self.mode)
-        fn = "weights.{epoch:02d}-{loss:.2f}.hdf5"
+        fn = "weights.{epoch:02d}-{loss:.4f}.hdf5"
         filepath = os.path.join(path, fn)
         checkpoint = ModelCheckpoint(filepath, monitor='loss')
         callbacks_list = [checkpoint]
-        
-        self.model.fit_generator(self.generator(), 1000, epochs=100, callbacks=callbacks_list,
+
+        '''
+        g = generator(datasource)
+        c = 0
+        print self.model.metrics_names
+        for x,y in g:
+            output(x,y,prefix=str(c)+"_")
+            print self.model.train_on_batch(x,y)
+            print self.model.test_on_batch(x,y)
+            pred = self.model.predict_on_batch(x)
+            output(x,pred,prefix=str(c)+"__", slice_y=True)
+            c += 1
+            if c == 3:
+                raise
+        '''
+
+        self.model.fit_generator(generator(datasource), 1000, epochs=100, callbacks=callbacks_list,
                  verbose=1, workers=1, initial_epoch=initial_epoch)
 
     def predict_sliding_window(self, img):
@@ -85,10 +107,33 @@ class PSPNet:
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
 
-        #debug(self.model, data)
+        # debug(self.model, data)
         pred = self.model.predict(data)
         return pred
 
+def generator(datasource):
+    while True:
+        im = datasource.next_im()
+        #print im
+        #t = time.time()
+        img = datasource.get_image(im)
+        gt = datasource.get_ground_truth(im)
+        data,label = image_processor.build_data_and_label(img, gt)
+        #print time.time() - t
+        yield (data,label)
+
+def output(x,y,prefix="",slice_y=False):
+    x = x[0]
+    y = y[0]
+    misc.imsave(prefix+"x.png", x)
+    cm = np.argmax(y, axis=2) + 1
+    cm = utils.add_color(cm)
+    misc.imsave(prefix+"cm.png", cm)
+    if slice_y:
+        for i in xrange(150):
+            if np.max(y[:,:,i]) > 0.1:
+                misc.imsave(prefix+str(i)+".png", y[:,:,i])
+    
 
 def debug(model, data):
     names = [layer.name for layer in model.layers]
@@ -100,20 +145,18 @@ def print_activation(model, layer_name, data):
                                      outputs=model.get_layer(layer_name).output)
     io = intermediate_layer_model.predict(data)
     print layer_name, array_to_str(io)
-    if layer_name == "concatenate_1":
-        print "Saving", layer_name
-        with h5py.File("keras.h5", 'w') as f:
-            f.create_dataset('a', data=io)
+    #if layer_name == "concatenate_1":
+    #    print "Saving", layer_name
+    #    with h5py.File("keras.h5", 'w') as f:
+    #        f.create_dataset('a', data=io)
 def array_to_str(a):
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a), np.max(a), np.mean(a))
 
-def set_weights(model):
-    weights = np.load(WEIGHTS).item()
+def set_npy_weights(model, npy_weights):
+    weights = np.load(npy_weights).item()
 
     for layer in model.layers:
         print layer.name
-        if layer.name == "conv5_4":
-            break
         if layer.name[:4] == 'conv' and layer.name[-2:] == 'bn':
             mean = weights[layer.name]['mean'].reshape(-1)
             variance = weights[layer.name]['variance'].reshape(-1)
@@ -147,8 +190,14 @@ if __name__ == "__main__":
 
     with sess.as_default():
         img = misc.imread(args.input_path)
+        
+        pspnet = None
+        if args.checkpoint is None:
+            pspnet = PSPNet("softmax")
+            pspnet.load_default_weights()
+        else:
+            pspnet = PSPNet(None, ckpt=args.checkpoint)
 
-        pspnet = PSPNet(None, mode="softmax", ckpt=args.checkpoint)
         probs = pspnet.predict(img)
         #probs = pspnet.predict_sliding_window(img)
 
