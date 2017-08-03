@@ -15,6 +15,7 @@ import utils
 parser = argparse.ArgumentParser()
 parser.add_argument('--id', default="0")
 parser.add_argument("-p", required=True, help="Project name")
+parser.add_argument("-r", action='store_true', default=False, help="Randomize image list")
 parser.add_argument("--mode", required=True, help="softmax, sigmoid, etc")
 parser.add_argument("--checkpoint", help="Checkpoint .hdf5")
 args = parser.parse_args()
@@ -24,6 +25,14 @@ os.environ["CUDA_VISIBLE_DEVICES"] = args.id
 project = args.p
 mode = args.mode
 checkpoint = args.checkpoint
+
+config = utils.get_config(project)
+random.seed(3)
+datasource = DataSource(config, random=False)
+im_list = datasource.im_list
+if args.r:
+    random.seed(3)
+    random.shuffle(im_list)
 
 root_result = "predictions/original/"
 if checkpoint is not None:
@@ -38,12 +47,9 @@ root_allprob = os.path.join(root_result, 'all_prob')
 sess = tf.Session()
 K.set_session(sess)
 with sess.as_default():
-    config = utils.get_config(project)
-    random.seed(3)
-    datasource = DataSource(config, random=False)
     pspnet = PSPNet(mode, ckpt=checkpoint)
 
-    for im in datasource.im_list:
+    for im in im_list:
         print im
 
         fn_maxprob = os.path.join(root_maxprob, im.replace('.jpg', '.h5'))

@@ -44,8 +44,8 @@ datasource = DataSource(config, random=True)
 
 checkpoint = None
 checkpoint_dir = "checkpoints/{}".format(mode)
-if os.path.exists(checkpoint_dir):
-    os.mkdirs(checkpoint_dir)
+if not os.path.exists(checkpoint_dir):
+    os.makedirs(checkpoint_dir)
 
 epoch = 0
 if args.resume:
