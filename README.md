@@ -24,6 +24,8 @@ Was repaired some issues. But the result is not as well as expected compared to 
 ![Original](test.jpg)
 ![Processed](test_seg.jpg)
 ![Alpha mixed](test_seg_blended.jpg)
+
+## Pycaffe result
 ![Pycaffe results](test_pycaffe.jpg)
 ## Dependencies:
 1. Tensorflow
