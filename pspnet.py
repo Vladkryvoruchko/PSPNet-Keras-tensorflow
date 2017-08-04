@@ -46,17 +46,6 @@ class PSPNet:
         WEIGHTS = 'pspnet50_ade20k.npy'
         self.set_weights(WEIGHTS)
 
-    def generator(datasource):
-        while True:
-            im = datasource.next_im()
-            #print im
-            #t = time.time()
-            img = datasource.get_image(im)
-            gt = datasource.get_ground_truth(im)
-            data,label = image_processor.build_data_and_label(img, gt)
-            #print time.time() - t
-            yield (data,label)
-
     def train(self, datasource, initial_epoch=0):
         path = "checkpoints/{}".format(self.mode)
         fn = "weights.{epoch:02d}-{loss:.4f}.hdf5"
@@ -65,7 +54,7 @@ class PSPNet:
         callbacks_list = [checkpoint]
 
         '''
-        g = generator(datasource)
+        g = data_generator(datasource)
         c = 0
         print self.model.metrics_names
         for x,y in g:
@@ -79,7 +68,7 @@ class PSPNet:
                 raise
         '''
 
-        self.model.fit_generator(generator(datasource), 1000, epochs=100, callbacks=callbacks_list,
+        self.model.fit_generator(data_generator(datasource), 1000, epochs=100, callbacks=callbacks_list,
                  verbose=1, workers=1, initial_epoch=initial_epoch)
 
     def predict_sliding_window(self, img):
@@ -107,11 +96,11 @@ class PSPNet:
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
 
-        # debug(self.model, data)
+        debug(self.model, data)
         pred = self.model.predict(data)
         return pred
 
-def generator(datasource):
+def data_generator(datasource):
     while True:
         im = datasource.next_im()
         #print im

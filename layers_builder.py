@@ -1,6 +1,6 @@
 from keras.layers import Conv2D, MaxPooling2D, AveragePooling2D
-from keras.layers import BatchNormalization, Activation, Input, Dropout, ZeroPadding2D
-from keras.layers import merge, concatenate, Lambda, Reshape
+from keras.layers import BatchNormalization, Activation, Input, Dropout, ZeroPadding2D, Lambda
+from keras.layers.merge import Concatenate, Add
 from keras.models import Model
 from keras.regularizers import l2
 from keras.optimizers import SGD
@@ -17,19 +17,18 @@ weight_decay = 0#5e-4
 def BN(name=""):
     return BatchNormalization(momentum=0.95, name=name, epsilon=1e-5)
 
-def Interp(x, size=(60,60)):
-    new_height = size[0]
-    new_width = size[1]
+def Interp(x, shape=(60,60)):
+    new_height,new_width = shape
     resized = tf.image.resize_images(x, [new_height, new_width], align_corners=True)
     return resized
 
-def Interp_zoom(x, zoom=8):
-    old_height = int(x.shape[1])
-    old_width = int(x.shape[2])
-    new_height = old_height + (old_height-1) * (zoom - 1)
-    new_width = old_width + (old_width-1) * (zoom - 1)
-    resized = tf.image.resize_images(x, [new_height, new_width], align_corners=True)
-    return resized
+# def Interp_zoom(x, zoom=8):
+#     old_height = int(x.shape[1])
+#     old_width = int(x.shape[2])
+#     new_height = old_height + (old_height-1) * (zoom - 1)
+#     new_width = old_width + (old_width-1) * (zoom - 1)
+#     resized = tf.image.resize_images(x, [new_height, new_width], align_corners=True)
+#     return resized
 
 
 def residual_conv(prev, level, pad=1, lvl=1, sub_lvl=1, modify_stride=False):
@@ -84,8 +83,10 @@ def residual_short(prev_layer, level, pad=1, lvl=1, sub_lvl=1, modify_stride=Fal
     block_2 = short_convolution_branch(prev_layer, level,
                         lvl=lvl, sub_lvl=sub_lvl,
                         modify_stride=modify_stride)
+    added = Add()([block_1, block_2])
 
-    return merge([block_1, block_2], mode='sum') 
+    # return merge([block_1, block_2], mode='sum') 
+    return added
 
 def residual_empty(prev_layer, level, pad=1, lvl=1, sub_lvl=1):
     prev_layer = Activation('relu')(prev_layer)
@@ -93,7 +94,10 @@ def residual_empty(prev_layer, level, pad=1, lvl=1, sub_lvl=1):
     block_1 = residual_conv(prev_layer, level, 
                         pad=pad, lvl=lvl, sub_lvl=sub_lvl)
     block_2 = empty_branch(prev_layer)
-    return merge([block_1, block_2], mode='sum')
+    added = Add()([block_1, block_2])
+
+    # return merge([block_1, block_2], mode='sum')
+    return added
 
 def ResNet(inp):
     #Names for the first couple layers of model
@@ -178,33 +182,33 @@ def PSPNet(res):
     interp_block6 = interp_block(res, 1, str_lvl=6)
 
     #concat all these layers by 4th axis(3+1).  resulted shape=(1,60,60,4096)
-    res = concatenate([res,
+    res = Concatenate()([res,
                     interp_block6,
                     interp_block3,
                     interp_block2,
-                    interp_block1], axis=3)
+                    interp_block1])
     return res
 
-def build_pspnet(activation='softmax'):
-    '''
-    Normal PSPNet. Consistent up to conv5_4
-    '''
-    inp = Input((473,473, 3))
+def PSPNet_features(inp):
     res = ResNet(inp)
     psp = PSPNet(res)
-
-    # Freeze
-    #features = Model(inputs=inp, outputs=psp)
-    #for layer in features.layers:
-    #    layer.trainable = False
 
     x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", name="conv5_4", use_bias=False, kernel_regularizer=l2(weight_decay))(psp)
     x = BN(name="conv5_4_bn")(x)
     x = Activation('relu')(x)
     x = Dropout(0.1)(x)
+    return x
+
+
+def build_pspnet(activation='softmax'):
+    '''
+    Normal PSPNet.
+    '''
+    inp = Input((473,473,3))
+    x = PSPNet_features(inp)
 
     x = Conv2D(150, (1, 1), strides=(1, 1), name="conv6", kernel_regularizer=l2(weight_decay))(x)
-    x = Lambda(Interp_zoom)(x)
+    x = Lambda(Interp, arguments={'shape': (473,473)})(x)
 
     loss = None
     if activation == 'softmax':
