@@ -31,6 +31,6 @@ with sess.as_default():
     pspnet_gan = PSPNetGAN()
     pspnet_gan.load_weights(args.g_weights, args.d_weights)
 
-    pspnet.train(datasource, initial_epoch=args.epoch)
+    pspnet_gan.train(datasource, initial_epoch=args.epoch)
 
 

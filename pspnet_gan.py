@@ -47,7 +47,7 @@ class PSPNetGAN:
                 a_loss = self.adversarial.train_on_batch({'img': data}, {'pred': label, 'd_out': y})
 
                 print "{}: [D loss: {}, acc: {}]".format(i, d_loss[0], d_loss[1])
-                print "{}: [A loss: {}, acc: {}]".format(log_mesg, a_loss[0], a_loss[1])
+                print "{}: [A loss: {}, acc: {}]".format(i, a_loss[0], a_loss[1])
                 loss = d_loss[0]
 
             # Checkpoint
@@ -72,10 +72,10 @@ class PSPNetGAN:
     def load_weights(self, g_weights, d_weights):
         if g_weights is not None:
             print "Loading generator weights:", g_weights
-            self.generator.load_weights(weights)
+            self.generator.load_weights(g_weights)
         if d_weights is not None:
             print "Loading discriminator weights:", d_weights
-            self.generator.load_weights(weights)
+            self.discriminator.load_weights(d_weights)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)
