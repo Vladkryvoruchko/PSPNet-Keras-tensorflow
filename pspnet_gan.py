@@ -9,6 +9,7 @@ from scipy import misc
 from keras import backend as K
 from keras.models import Model, load_model
 from keras.callbacks import ModelCheckpoint
+from keras.utils import plot_model
 import tensorflow as tf
 
 from gan_builder import DCGAN
@@ -19,22 +20,16 @@ import utils
 class PSPNetGAN:
 
     def __init__(self):
-        self.dcgan = DCGAN()
+        self.dcgan = DCGAN(disc_use_features=False)
         self.generator = self.dcgan.generator
         self.discriminator = self.dcgan.discriminator
         self.adversarial = self.dcgan.adversarial
-
-    def set_weights(self, weights):
-        print "Loading from", weights
-        if '.h5' in weights or '.hdf5' in weights:
-            self.model.load_weights(weights)
-        else:
-            raise Exception('Weight file format not recognized.')
 
     def train(self, datasource, train_steps=1000, epochs=100, initial_epoch=0):
         g = data_generator(datasource)
         for e in xrange(initial_epoch, epochs):
             print "Epoch {}/{}".format(e, epochs)
+            loss = None
             for i in xrange(train_steps):
                 data,label = g.next()
 
@@ -53,12 +48,45 @@ class PSPNetGAN:
 
                 print "{}: [D loss: {}, acc: {}]".format(i, d_loss[0], d_loss[1])
                 print "{}: [A loss: {}, acc: {}]".format(log_mesg, a_loss[0], a_loss[1])
+                loss = d_loss[0]
 
             # Checkpoint
-            # path = "checkpoints/{}".format(self.mode)
-            # fn = "weights.{epoch:02d}-{loss:.4f}.hdf5"
-            # filepath = os.path.join(path, fn)
-            # print "Checkpoint:", filepath
+            fn = "weights.{}-{}.hdf5".format(e, loss)
+            checkpoint(fn)
+
+    def checkpoint(self, fn):
+        checkpoints_dir = "checkpoints/gan/"
+        g_path = os.path.join(checkpoints_dir, "generator")
+        d_path = os.path.join(checkpoints_dir, "discriminator")
+        if not os.path.exists(g_path):
+            os.makedirs(g_path)
+        if not os.path.exists(g_path):
+            os.makedirs(g_path)
+        g_fn = os.path.join(g_path, fn)
+        d_fn = os.path.join(d_path, fn)
+        self.generator.save(g_fn)
+        self.discriminator.save(d_fn)
+        print "Checkpointed. ", g_fn
+        print "Checkpointed. ", d_fn
+
+    def load_weights(self, g_weights, d_weights):
+        if g_weights is not None:
+            print "Loading generator weights:", g_weights
+            self.generator.load_weights(weights)
+        if d_weights is not None:
+            print "Loading discriminator weights:", d_weights
+            self.generator.load_weights(weights)
+
+    def predict_sliding_window(self, img):
+        patches = image_processor.build_sliding_window(img)
+
+        outputs = []
+        for patch in patches:
+            out = self.feed_forward(patch)
+            outputs.append(out)
+        crop_probs = np.concatenate(outputs, axis=0)
+        probs = image_processor.post_process_sliding_window(img, crop_probs)
+        return probs
 
     def predict(self, img):
         img = misc.imresize(img, (473, 473))
@@ -74,8 +102,8 @@ class PSPNetGAN:
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
 
-        # debug(self.model, data)
-        pred = self.model.predict(data)
+        # debug(self.generator, data)
+        pred = self.generator.predict(data)
         return pred
 
 def data_generator(datasource):
@@ -93,7 +121,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_path', type=str, default='', required=True, help='Path the input image')
     parser.add_argument('--output_path', type=str, default='', required=True, help='Path to output')
-    parser.add_argument('--checkpoint', type=str, help='Checkpoint')
+    parser.add_argument('--g_weights', type=str, help='Generator checkpoint')
+    parser.add_argument('--d_weights', type=str, help='Discriminator checkpoint')
     parser.add_argument('--id', default="0")
     args = parser.parse_args()
 
@@ -105,17 +134,29 @@ if __name__ == "__main__":
     with sess.as_default():
         img = misc.imread(args.input_path)
         
-        pspnet = None
-        if args.checkpoint is None:
-            pspnet = PSPNet("softmax")
-            pspnet.load_default_weights()
-        else:
-            pspnet = PSPNet(None, ckpt=args.checkpoint)
+        pspnet_gan = PSPNetGAN()
+        pspnet_gan.load_weights(args.g_weights, args.d_weights)
 
-        probs = pspnet.predict(img)
-        #probs = pspnet.predict_sliding_window(img)
+        probs = pspnet_gan.predict(img)
+        #probs = pspnet_gan.predict_sliding_window(img)
 
         cm = np.argmax(probs, axis=2) + 1
         color_cm = utils.add_color(cm)
         misc.imsave(args.output_path, color_cm)
+
+        print "GENERATOR"
+        model = pspnet_gan.generator
+        model.summary()
+        print "DISCRIMINATOR"
+        model = pspnet_gan.discriminator
+        model.summary()
+        print "ADVERSARIAL"
+        model = pspnet_gan.adversarial
+        model.summary()
+
+
+        # Plot networks
+        plot_model(pspnet_gan.generator, to_file='gen.png', show_shapes=True)
+        plot_model(pspnet_gan.discriminator, to_file='disc.png', show_shapes=True)
+        plot_model(pspnet_gan.adversarial, to_file='adversarial.png', show_shapes=True)
 

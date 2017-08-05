@@ -22,15 +22,6 @@ def Interp(x, shape=(60,60)):
     resized = tf.image.resize_images(x, [new_height, new_width], align_corners=True)
     return resized
 
-# def Interp_zoom(x, zoom=8):
-#     old_height = int(x.shape[1])
-#     old_width = int(x.shape[2])
-#     new_height = old_height + (old_height-1) * (zoom - 1)
-#     new_width = old_width + (old_width-1) * (zoom - 1)
-#     resized = tf.image.resize_images(x, [new_height, new_width], align_corners=True)
-#     return resized
-
-
 def residual_conv(prev, level, pad=1, lvl=1, sub_lvl=1, modify_stride=False):
     lvl = str(lvl)
     sub_lvl = str(sub_lvl)
@@ -84,8 +75,6 @@ def residual_short(prev_layer, level, pad=1, lvl=1, sub_lvl=1, modify_stride=Fal
                         lvl=lvl, sub_lvl=sub_lvl,
                         modify_stride=modify_stride)
     added = Add()([block_1, block_2])
-
-    # return merge([block_1, block_2], mode='sum') 
     return added
 
 def residual_empty(prev_layer, level, pad=1, lvl=1, sub_lvl=1):
@@ -95,8 +84,6 @@ def residual_empty(prev_layer, level, pad=1, lvl=1, sub_lvl=1):
                         pad=pad, lvl=lvl, sub_lvl=sub_lvl)
     block_2 = empty_branch(prev_layer)
     added = Add()([block_1, block_2])
-
-    # return merge([block_1, block_2], mode='sum')
     return added
 
 def ResNet(inp):
@@ -181,7 +168,7 @@ def PSPNet(res):
     interp_block3 = interp_block(res, 2, str_lvl=3)
     interp_block6 = interp_block(res, 1, str_lvl=6)
 
-    #concat all these layers by 4th axis(3+1).  resulted shape=(1,60,60,4096)
+    #concat all these layers. resulted shape=(1,60,60,4096)
     res = Concatenate()([res,
                     interp_block6,
                     interp_block3,
