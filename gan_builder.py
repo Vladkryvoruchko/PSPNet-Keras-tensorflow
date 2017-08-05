@@ -11,8 +11,8 @@ from layers_builder import Interp
 
 class DCGAN:
     def __init__(self, disc_use_features=False):
-        self.d_lr = 1e-3
-        self.a_lr = 1e-4
+        self.d_lr = 1e-1
+        self.a_lr = 0#1e-4
         self.disc_use_features = disc_use_features
 
         self.img = Input((473,473,3), name="img")
@@ -40,14 +40,16 @@ class DCGAN:
         d_out = Activation('linear', name="d_out")(d_out)
         self.discriminator.trainable = False
 
-        model = Model(inputs=self.img, outputs=[pred,d_out])
+        #model = Model(inputs=self.img, outputs=[pred,d_out])
+        model = Model(inputs=self.img, outputs=d_out)
 
         # Compile
         opt = SGD(lr=self.a_lr, momentum=0.9, nesterov=True)
-        model.compile(optimizer=opt,
-                        loss={'pred': 'binary_crossentropy', 'd_out': 'binary_crossentropy'}, 
-                        loss_weight={'pred': 1., 'd_out': 1.},
-                        metrics=['accuracy'])
+        model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
+        #model.compile(optimizer=opt,
+        #                loss={'pred': 'binary_crossentropy', 'd_out': 'binary_crossentropy'}, 
+        #                loss_weight={'pred': 1., 'd_out': 1.},
+        #                metrics=['accuracy'])
         return model
 
     def build_generator(self):
@@ -59,7 +61,7 @@ class DCGAN:
         model = Model(inputs=self.img, outputs=pred)
 
         # Only used to generate fake images
-        model.compile(optimizer="SGD",loss="binary_crossentropy")
+        model.compile(optimizer="SGD", loss="binary_crossentropy", metrics=['accuracy'])
         return model
 
     def build_discriminator(self):

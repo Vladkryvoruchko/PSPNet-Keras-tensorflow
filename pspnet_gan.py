@@ -31,8 +31,11 @@ class PSPNetGAN:
             print "Epoch {}/{}".format(e, epochs)
             loss = None
             for i in xrange(train_steps):
+                t1 = time.time()
                 data,label = g.next()
-
+                t2 = time.time()
+                print "Get: ", t2-t1
+                
                 # Train discriminator
                 label_fake = self.generator.predict(data)
                 g_loss = self.generator.test_on_batch(data, label)
@@ -42,20 +45,24 @@ class PSPNetGAN:
                 imgs = np.concatenate((data, data))
 
                 d_loss = self.discriminator.train_on_batch({'pred': x}, {'d_out': y})
+                print self.discriminator.predict({'pred': x})
                 # d_loss = self.discriminator.train_on_batch({'pred': x, 'img': imgs}, {'d_out': y})
 
                 # Train adversarial
                 y = np.array([1])
-                a_loss = self.adversarial.train_on_batch({'img': data}, {'pred': label, 'd_out': y})
+                #a_loss = self.adversarial.train_on_batch({'img': data}, {'pred': label, 'd_out': y})
+                a_loss = self.adversarial.train_on_batch({'img': data}, {'d_out': y})
 
                 print "{}: [D loss: {}, acc: {}]".format(i, d_loss[0], d_loss[1])
                 print "{}: [A loss: {}, acc: {}]".format(i, a_loss[0], a_loss[1])
                 print "{}: [G loss: {}, acc: {}]".format(i, g_loss[0], g_loss[1])
                 loss = d_loss[0]
+                t3 = time.time()
+                print "Train: ", t3-t2
 
             # Checkpoint
             fn = "weights.{}-{}.hdf5".format(e, loss)
-            checkpoint(fn)
+            self.checkpoint(fn)
 
     def checkpoint(self, fn):
         checkpoints_dir = "checkpoints/gan/"
