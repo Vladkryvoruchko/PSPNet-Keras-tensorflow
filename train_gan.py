@@ -12,6 +12,7 @@ import utils
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--id', default="0")
+parser.add_argument('--mode', required=True, type=str, help='Mode name to save')
 parser.add_argument('--g_weights', type=str, help='Generator checkpoint')
 parser.add_argument('--d_weights', type=str, help='Discriminator checkpoint')
 parser.add_argument('--epoch', type=int, default=0)
@@ -28,7 +29,7 @@ sess = tf.Session()
 K.set_session(sess)
 with sess.as_default():
 
-    pspnet_gan = PSPNetGAN()
+    pspnet_gan = PSPNetGAN(args.mode)
     pspnet_gan.load_weights(args.g_weights, args.d_weights)
 
     pspnet_gan.train(datasource, initial_epoch=args.epoch)

@@ -11,8 +11,8 @@ from layers_builder import Interp
 
 class DCGAN:
     def __init__(self, disc_use_features=False):
-        self.d_lr = 1e-1
-        self.a_lr = 0#1e-4
+        self.d_lr = 1e-2
+        self.a_lr = 1e-3
         self.disc_use_features = disc_use_features
 
         self.img = Input((473,473,3), name="img")

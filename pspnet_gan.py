@@ -19,7 +19,9 @@ import utils
 
 class PSPNetGAN:
 
-    def __init__(self):
+    def __init__(self, mode="baseline"):
+        self.mode = mode
+
         self.dcgan = DCGAN(disc_use_features=False)
         self.generator = self.dcgan.generator
         self.discriminator = self.dcgan.discriminator
@@ -65,13 +67,13 @@ class PSPNetGAN:
             self.checkpoint(fn)
 
     def checkpoint(self, fn):
-        checkpoints_dir = "checkpoints/gan/"
+        checkpoints_dir = "checkpoints/{}/".format(self.mode)
         g_path = os.path.join(checkpoints_dir, "generator")
         d_path = os.path.join(checkpoints_dir, "discriminator")
         if not os.path.exists(g_path):
             os.makedirs(g_path)
-        if not os.path.exists(g_path):
-            os.makedirs(g_path)
+        if not os.path.exists(d_path):
+            os.makedirs(d_path)
         g_fn = os.path.join(g_path, fn)
         d_fn = os.path.join(d_path, fn)
         self.generator.save(g_fn)
