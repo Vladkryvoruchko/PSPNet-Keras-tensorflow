@@ -23,7 +23,6 @@ class PSPNet:
         if ckpt is not None:
             print "Loading from checkpoint:", ckpt
             self.model = load_model(ckpt, custom_objects={'Interp': layers.Interp,
-                                                            'Interp_zoom': layers.Interp_zoom,
                                                             'tf': tf})
         else:
             print "Building model"
@@ -96,7 +95,7 @@ class PSPNet:
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
 
-        debug(self.model, data)
+        # debug(self.model, data)
         pred = self.model.predict(data)
         return pred
 
