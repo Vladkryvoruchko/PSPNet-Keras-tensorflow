@@ -35,6 +35,8 @@ class PSPNetGAN:
 
                 # Train discriminator
                 label_fake = self.generator.predict(data)
+                g_loss = self.generator.test_on_batch(data, label)
+
                 x = np.concatenate((label, label_fake))
                 y = np.array([1,0])
                 imgs = np.concatenate((data, data))
@@ -48,6 +50,7 @@ class PSPNetGAN:
 
                 print "{}: [D loss: {}, acc: {}]".format(i, d_loss[0], d_loss[1])
                 print "{}: [A loss: {}, acc: {}]".format(i, a_loss[0], a_loss[1])
+                print "{}: [G loss: {}, acc: {}]".format(i, g_loss[0], g_loss[1])
                 loss = d_loss[0]
 
             # Checkpoint
@@ -154,9 +157,8 @@ if __name__ == "__main__":
         model = pspnet_gan.adversarial
         model.summary()
 
-
         # Plot networks
-        plot_model(pspnet_gan.generator, to_file='gen.png', show_shapes=True)
-        plot_model(pspnet_gan.discriminator, to_file='disc.png', show_shapes=True)
-        plot_model(pspnet_gan.adversarial, to_file='adversarial.png', show_shapes=True)
+        # plot_model(pspnet_gan.generator, to_file='gen.png', show_shapes=True)
+        # plot_model(pspnet_gan.discriminator, to_file='disc.png', show_shapes=True)
+        # plot_model(pspnet_gan.adversarial, to_file='adversarial.png', show_shapes=True)
 
