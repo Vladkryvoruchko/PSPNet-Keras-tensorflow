@@ -52,20 +52,20 @@ class PSPNetGAN:
 
                 # Train adversarial
                 y = np.array([1])
-                #a_loss = self.adversarial.train_on_batch({'img': data}, {'pred': label, 'd_out': y})
-                a_loss = self.adversarial.train_on_batch({'img': data}, {'d_out': y})
+                a_loss = self.adversarial.train_on_batch({'img': data}, {'pred': label, 'd_out': y})
+                #a_loss = self.adversarial.train_on_batch({'img': data}, {'d_out': y})
 
-                print "{}: [D loss: {}, acc: {}]".format(i, d_loss[0], d_loss[1])
-                print "{}: [A loss: {}, acc: {}]".format(i, a_loss[0], a_loss[1])
-                print "{}: [G loss: {}, acc: {}]".format(i, g_loss[0], g_loss[1])
-                loss = d_loss[0]
+                print "{}: [D {}]".format(i, metrics_to_str(self.discriminator.metrics_names, d_loss))
+                print "{}: [A {}]".format(i, metrics_to_str(self.adversarial.metrics_names, a_loss))
+                print "{}: [G {}]".format(i, metrics_to_str(self.generator.metrics_names, g_loss))
+                loss = a_loss[0]
                 t3 = time.time()
                 print "Train: ", t3-t2
 
             # Checkpoint
             fn = "weights.{}-{}.hdf5".format(e, loss)
             self.checkpoint(fn)
-
+    
     def checkpoint(self, fn):
         checkpoints_dir = "checkpoints/{}/".format(self.mode)
         g_path = os.path.join(checkpoints_dir, "generator")
@@ -128,6 +128,13 @@ def data_generator(datasource):
         data,label = image_processor.build_data_and_label(img, gt)
         #print time.time() - t
         yield (data,label)
+
+def metrics_to_str(metrics_names, metrics):
+    out = ""
+    for i in xrange(len(metrics_names)):
+        out += ", {}: {}".format(metrics_names[i], metrics[i])
+    return out[2:]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
