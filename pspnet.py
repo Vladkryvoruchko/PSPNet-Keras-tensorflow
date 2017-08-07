@@ -53,7 +53,7 @@ class PSPNet:
         callbacks_list = [checkpoint]
 
         self.model.fit_generator(DataGenerator(datasource), 1000, epochs=100, callbacks=callbacks_list,
-                 verbose=1, workers=1, initial_epoch=initial_epoch)
+                 verbose=1, workers=6, initial_epoch=initial_epoch)
 
     def predict_sliding_window(self, img):
         patches = image_processor.build_sliding_window(img)

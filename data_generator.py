@@ -1,3 +1,7 @@
+import time
+import threading
+
+import image_processor
 
 class threadsafe_iter:
     """Takes an iterator/generator and makes it thread-safe by
