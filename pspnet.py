@@ -11,10 +11,10 @@ from keras.models import Model, load_model
 from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
 
-import layers_builder as layers
-from datasource import DataSource
 import image_processor
 import utils
+import layers_builder as layers
+from data_generator import DataGenerator
 
 class PSPNet:
 
@@ -52,22 +52,7 @@ class PSPNet:
         checkpoint = ModelCheckpoint(filepath, monitor='loss')
         callbacks_list = [checkpoint]
 
-        '''
-        g = data_generator(datasource)
-        c = 0
-        print self.model.metrics_names
-        for x,y in g:
-            output(x,y,prefix=str(c)+"_")
-            print self.model.train_on_batch(x,y)
-            print self.model.test_on_batch(x,y)
-            pred = self.model.predict_on_batch(x)
-            output(x,pred,prefix=str(c)+"__", slice_y=True)
-            c += 1
-            if c == 3:
-                raise
-        '''
-
-        self.model.fit_generator(data_generator(datasource), 1000, epochs=100, callbacks=callbacks_list,
+        self.model.fit_generator(DataGenerator(datasource), 1000, epochs=100, callbacks=callbacks_list,
                  verbose=1, workers=1, initial_epoch=initial_epoch)
 
     def predict_sliding_window(self, img):
@@ -98,17 +83,6 @@ class PSPNet:
         # debug(self.model, data)
         pred = self.model.predict(data)
         return pred
-
-def data_generator(datasource):
-    while True:
-        im = datasource.next_im()
-        #print im
-        #t = time.time()
-        img = datasource.get_image(im)
-        gt = datasource.get_ground_truth(im)
-        data,label = image_processor.build_data_and_label(img, gt)
-        #print time.time() - t
-        yield (data,label)
 
 def output(x,y,prefix="",slice_y=False):
     x = x[0]
