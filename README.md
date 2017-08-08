@@ -6,7 +6,7 @@ Converted trained weights needed to run the network.
 
 
 Download converted weights here:
-[link:pspnet50_ade20k.npy](https://www.dropbox.com/s/2ksp9hvokzk6qc8/pspnet50_ade20k.npy?dl=0)
+[link:pspnet50_ade20k.npy](https://www.dropbox.com/s/ms8afun494dlh1t/pspnet50_ade20k.npy?dl=0)
 
 And place in directory with pspnet50_ade20k.npy
 
@@ -24,6 +24,8 @@ Was repaired some issues. But the result is not as well as expected compared to 
 ![Original](test.jpg)
 ![Processed](test_seg.jpg)
 ![Alpha mixed](test_seg_blended.jpg)
+![New](out.jpg)
+![New](probs.jpg)
 
 ## Pycaffe result
 ![Pycaffe results](test_pycaffe.jpg)

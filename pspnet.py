@@ -1,7 +1,7 @@
 import os
 import argparse
 import numpy as np
-from scipy import misc
+from scipy import misc, ndimage
 
 from keras import backend as K
 import tensorflow as tf
@@ -26,7 +26,7 @@ class PSPNet:
         h_ori,w_ori = img.shape[:2]
 
         # Preprocess
-        img = img.resize((473,473))
+        img = misc.imresize(img, (473, 473))
         img = img - DATA_MEAN
         img = img[:,:,::-1] # RGB => BGR
         img = img.astype('float32')
@@ -43,7 +43,7 @@ class PSPNet:
         assert data.shape == (473,473,3)
         data = data[np.newaxis,:,:,:]
 
-        utils.debug(self.model, data)
+        # utils.debug(self.model, data)
         pred = self.model.predict(data)
         return pred[0]
 
