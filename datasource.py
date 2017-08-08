@@ -8,6 +8,8 @@ from keras.utils import to_categorical
 import utils
 
 NUM_CLASS = 150
+IGNORE_CLASSES = False
+ADD_NOISE = False
 
 class DataSource:
     def __init__(self, config, random=True):
@@ -43,10 +45,10 @@ class DataSource:
         gt = misc.imread(gt_path)
         gt = (np.arange(NUM_CLASS) == gt[:,:,None] - 1)
         
-        gt = gt.astype(int)
-        for i in xrange(NUM_CLASS):
-            if np.sum(gt[:,:,i]) == 0:
-                gt[:,:,i] = -1
-        #print np.min(gt), np.max(gt), np.mean(gt)
+        if IGNORE_CLASSES:
+            gt = gt.astype(int)
+            for i in xrange(NUM_CLASS):
+                if np.sum(gt[:,:,i]) == 0:
+                    gt[:,:,i] = -1
         return gt
 

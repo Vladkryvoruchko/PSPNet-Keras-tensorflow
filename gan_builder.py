@@ -72,6 +72,29 @@ class DCGAN:
         pred_scaled = Lambda(Interp, arguments={'shape': (60,60)})(pred)
 
         conv1 = Conv2D(256, 5, strides=1, padding="same", name="d_conv1", activation="relu", use_bias=False)(pred_scaled)
+        conv1 = MaxPooling2D(pool_size=4, padding='same', strides=2)(conv1) # 15x15
+        conv2 = Conv2D(512, 3, strides=1, padding="same", name="d_conv2", activation="relu", use_bias=False)(conv1)
+        conv2 = MaxPooling2D(pool_size=4, padding='same', strides=2)(conv2) # 4x4
+
+        flatten = Flatten()(conv5)
+        out = Dense(1, activation='sigmoid', name='d_out')(flatten)
+
+        model = Model(inputs=pred, outputs=out)
+        opt = SGD(lr=self.d_lr, momentum=0, nesterov=True)
+        model.compile(optimizer=opt,
+                        loss='binary_crossentropy', 
+                        metrics=['accuracy'])
+        return model
+
+
+    def build_discriminator_big(self):
+        '''
+        inp:      60x60x150 before bilinear upsampling
+        '''
+        pred = Input((473,473,150), name="pred")
+        pred_scaled = Lambda(Interp, arguments={'shape': (60,60)})(pred)
+
+        conv1 = Conv2D(256, 5, strides=1, padding="same", name="d_conv1", activation="relu", use_bias=False)(pred_scaled)
         conv1 = MaxPooling2D(pool_size=2, padding='same', strides=2)(conv1) # 30x30
         conv2 = Conv2D(256, 3, strides=1, padding="same", name="d_conv2", activation="relu", use_bias=False)(conv1)
         conv2 = MaxPooling2D(pool_size=2, padding='same', strides=2)(conv2) # 15x15
@@ -125,6 +148,18 @@ class DCGAN:
                         loss='binary_crossentropy',
                         metrics=['accuracy'])
         return model
+
+def channel_wise_convolution():
+    _, width, height, n_feat_map = inp.get_shape().as_list()
+    inp_reshape = tf.reshape(inp, [-1, width*height, n_feat_map])
+
+    inp_transpose = tf.transpose( inp_reshape, [2,0,1] )
+
+    W = self.weight_variable([n_feat_map,width*height,width*height])
+    output = tf.batch_matmul(inp_transpose, W)
+
+    output_transpose = tf.transpose(output, [1,2,0])
+    output_reshape = tf.reshape( output_transpose, [-1, height, width, n_feat_map] )
 
 
 
