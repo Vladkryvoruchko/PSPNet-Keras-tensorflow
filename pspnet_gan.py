@@ -42,8 +42,8 @@ class PSPNetGAN:
                 label_fake = self.generator.predict(data)
                 g_loss = self.generator.test_on_batch(data, label)
 
-                x = np.concatenate((label, label_fake))
-                y = np.array([1,0])
+                x = np.concatenate((label, label_fake, label_fake))
+                y = np.array([1,0,0])
                 imgs = np.concatenate((data, data))
 
                 d_loss = self.discriminator.train_on_batch({'pred': x}, {'d_out': y})
