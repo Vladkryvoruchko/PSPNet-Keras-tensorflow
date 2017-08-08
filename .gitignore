@@ -1,0 +1,6 @@
+*.pyc
+*.png
+*.npy
+
+checkpoints/*
+predictions/*
