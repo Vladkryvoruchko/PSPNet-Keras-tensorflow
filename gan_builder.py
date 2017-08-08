@@ -44,7 +44,7 @@ class DCGAN:
         #model = Model(inputs=self.img, outputs=d_out)
 
         # Compile
-        opt = SGD(lr=self.a_lr, momentum=0.9, nesterov=True)
+        opt = SGD(lr=self.a_lr, momentum=0, nesterov=True)
         #model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
         model.compile(optimizer=opt,
                         loss={'pred': 'binary_crossentropy', 'd_out': 'binary_crossentropy'}, 
@@ -86,7 +86,7 @@ class DCGAN:
         out = Dense(1, activation='sigmoid', name='d_out')(flatten)
 
         model = Model(inputs=pred, outputs=out)
-        opt = SGD(lr=self.d_lr, momentum=0.9, nesterov=True)
+        opt = SGD(lr=self.d_lr, momentum=0, nesterov=True)
         model.compile(optimizer=opt,
                         loss='binary_crossentropy', 
                         metrics=['accuracy'])
@@ -120,7 +120,7 @@ class DCGAN:
         out = Dense(1, activation='sigmoid', name='d_out')(flatten)
 
         model = Model(inputs=[pred,self.img], outputs=out)
-        opt = SGD(lr=self.d_lr, momentum=0.9, nesterov=True)
+        opt = SGD(lr=self.d_lr, momentum=0, nesterov=True)
         model.compile(optimizer=opt,
                         loss='binary_crossentropy',
                         metrics=['accuracy'])
