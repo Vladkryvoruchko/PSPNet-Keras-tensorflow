@@ -20,7 +20,7 @@ Interpolation layer is implemented in code as custom layer "Interp"
 
 ## Important
 
-Was repaired some issues. But the result is not as well as expected compared to pycaffe code of PSPNet. Here is an example of current code:
+Results Keras:
 ![Original](test.jpg)
 
 ![New](out.jpg)
