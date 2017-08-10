@@ -7,7 +7,9 @@ from scipy import misc
 from keras.utils import to_categorical
 import utils
 
+DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]]) # RGB
 NUM_CLASS = 150
+
 IGNORE_CLASSES = False
 ADD_NOISE = False
 
@@ -15,6 +17,7 @@ class DataSource:
     def __init__(self, config, random=True):
         self.image_dir = config["images"]
         self.ground_truth_dir = config["ground_truth"]
+        self.prediction_dir = os.path.join(config["workspace"], "predictions")
 
         im_list_txt = config["im_list"]
         self.im_list = utils.open_im_list(im_list_txt)
@@ -38,6 +41,12 @@ class DataSource:
         img = misc.imread(img_path)
         if img.ndim != 3:
             img = np.stack((img,img,img), axis=2)
+
+        # Preprocess
+        img = img - DATA_MEAN
+        # RGB => BGR
+        img = img[:,:,::-1]
+        img = img.astype('float32')
         return img
 
     def get_ground_truth(self, im):
@@ -51,4 +60,16 @@ class DataSource:
                 if np.sum(gt[:,:,i]) == 0:
                     gt[:,:,i] = -1
         return gt
+
+    def get_prediction(self, im, theshold=None):
+        pred = os.path.join(self.ground_truth_dir, im.replace('.jpg', '.h5'))
+        with h5py.File(file_path, 'r') as f:
+            output = f['allprob'][:]
+            if threshold is None:
+                return output
+            else:
+                output = output > threshold
+                return output
+
+
 

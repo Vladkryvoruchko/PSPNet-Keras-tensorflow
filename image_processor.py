@@ -4,36 +4,24 @@ from scipy import misc,ndimage
 
 from image_processor_utils import *
 
-def build_data_and_label(img, gt):
+def scale_and_crop(imgs):
     '''
-    For training.
-    Returns random crop of image and ground truth.
+    Scales and returns a random crop of images
     '''
-    img = preprocess(img)
+    box = random_crop(imgs[0])
 
-    img = scale_maxside(img, maxside=512)
-    gt = scale_maxside(gt, maxside=512)
-    
-    # Random crop
-    box = random_crop(img)
-    img = crop_image(img, box)
-    gt = crop_ground_truth(gt, box)
-
-    #if np.ndim(gt) == 2:
-    #    gt = gt[..., np.newaxis]
-
-    # Batch size of 1
-    data = img[np.newaxis, ...]
-    label = gt[np.newaxis, ...]
-
-    return data,label
+    outs = []
+    for img in imgs:
+        out = scale_maxside(img, maxside=512)
+        out = crop_array(out, box)
+        outs.append(out)
+    return outs
 
 def build_sliding_window(img):
     '''
     For testing.
     Returns sliding window patches as a batch.
     '''
-    img = preprocess(img)
     img = scale_maxside(img, maxside=512)
 
     data = crop_sliding_window(img)

@@ -4,28 +4,16 @@ import itertools
 from scipy import misc, ndimage
 import cv2
 
-DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]]) # RGB
 INPUT_SIZE = 473
 NUM_CLASS = 150
 
 stride_rate = 0.3
 
-def preprocess(img):
-    img = img - DATA_MEAN
-    # RGB => BGR
-    img = img[:,:,::-1]
-    return img.astype('float32')
-
-def crop_image(img, box):
+def crop_array(a, box):
+    h,w,c = a.shape
     sh,eh,sw,ew = box
-    crop = np.tile(DATA_MEAN, (INPUT_SIZE, INPUT_SIZE, 1))
+    crop = np.zeros((INPUT_SIZE,INPUT_SIZE, c), dtype=int)
     crop[0:eh-sh,0:ew-sw] = img[sh:eh,sw:ew]
-    return crop
-
-def crop_ground_truth(gt, box):
-    sh,eh,sw,ew = box
-    crop = np.zeros((INPUT_SIZE,INPUT_SIZE, NUM_CLASS), dtype=int)
-    crop[0:eh-sh,0:ew-sw] = gt[sh:eh,sw:ew]
     return crop
 
 def random_crop(img):
