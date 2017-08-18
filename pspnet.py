@@ -10,8 +10,8 @@ import tensorflow as tf
 import layers_builder as layers
 import utils
 
-
-DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]])  # RGB, these are the means for the ImageNet pretrained ResNet
+# These are the means for the ImageNet pretrained ResNet
+DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]])  # RGB order
 
 
 class PSPNet(object):
@@ -27,8 +27,10 @@ class PSPNet(object):
                 self.model = model_from_json(file_handle.read())
             self.model.load_weights(h5_path)
         else:
-            print("No Keras model & weights found, importing from numpy weights.")
-            self.model = layers.build_pspnet(nb_classes=nb_classes, resnet_layers=resnet_layers, input_shape=self.input_shape)
+            print("No Keras model & weights found, import from npy weights.")
+            self.model = layers.build_pspnet(nb_classes=nb_classes,
+                                             resnet_layers=resnet_layers,
+                                             input_shape=self.input_shape)
             self.set_npy_weights(weights)
 
     def predict(self, img):
@@ -50,7 +52,8 @@ class PSPNet(object):
 
         probs = self.feed_forward(img)
         h, w = probs.shape[:2]
-        probs = ndimage.zoom(probs, (1.*h_ori/h, 1.*w_ori/w, 1.), order=1, prefilter=False)
+        probs = ndimage.zoom(probs, (1.*h_ori/h, 1.*w_ori/w, 1.),
+                             order=1, prefilter=False)
         print("Finished prediction...")
 
         return probs
@@ -79,7 +82,8 @@ class PSPNet(object):
                 scale = weights[layer.name]['scale'].reshape(-1)
                 offset = weights[layer.name]['offset'].reshape(-1)
 
-                self.model.get_layer(layer.name).set_weights([mean, variance, scale, offset])
+                self.model.get_layer(layer.name).set_weights([mean, variance,
+                                                             scale, offset])
 
             elif layer.name[:4] == 'conv' and not layer.name[-4:] == 'relu':
                 try:
@@ -87,7 +91,8 @@ class PSPNet(object):
                     self.model.get_layer(layer.name).set_weights([weight])
                 except Exception as err:
                     biases = weights[layer.name]['biases']
-                    self.model.get_layer(layer.name).set_weights([weight, biases])
+                    self.model.get_layer(layer.name).set_weights([weight,
+                                                                 biases])
         print('Finished importing weights.')
 
         print("Writing keras model & weights")
@@ -102,21 +107,29 @@ class PSPNet50(PSPNet):
     """Build a PSPNet based on a 50-Layer ResNet."""
 
     def __init__(self, nb_classes, weights, input_shape):
-        PSPNet.__init__(self, nb_classes=nb_classes, resnet_layers=50, input_shape=input_shape, weights=weights)
+        PSPNet.__init__(self, nb_classes=nb_classes, resnet_layers=50,
+                        input_shape=input_shape, weights=weights)
 
 
 class PSPNet101(PSPNet):
     """Build a PSPNet based on a 101-Layer ResNet."""
 
     def __init__(self, nb_classes, weights, input_shape):
-        PSPNet.__init__(self, nb_classes=nb_classes, resnet_layers=101, input_shape=input_shape, weights=weights)
+        PSPNet.__init__(self, nb_classes=nb_classes, resnet_layers=101,
+                        input_shape=input_shape, weights=weights)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--model', type=str, default='pspnet50_ade20k', help='Model/Weights to use', choices=['pspnet50_ade20k', 'pspnet101_cityscapes', 'pspnet101_voc2012'])
-    parser.add_argument('-i', '--input_path', type=str, default='test.jpg', help='Path the input image')
-    parser.add_argument('-o', '--output_path', type=str, default='test.jpg', help='Path to output')
+    parser.add_argument('-m', '--model', type=str, default='pspnet50_ade20k',
+                        help='Model/Weights to use',
+                        choices=['pspnet50_ade20k',
+                                 'pspnet101_cityscapes',
+                                 'pspnet101_voc2012'])
+    parser.add_argument('-i', '--input_path', type=str, default='test.jpg',
+                        help='Path the input image')
+    parser.add_argument('-o', '--output_path', type=str, default='test.jpg',
+                        help='Path to output')
     parser.add_argument('--id', default="0")
     args = parser.parse_args()
 
@@ -130,12 +143,15 @@ if __name__ == "__main__":
         print(args)
 
         if "pspnet50" in args.model:
-            pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473), weights=args.model)
+            pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473),
+                              weights=args.model)
         elif "pspnet101" in args.model:
             if "cityscapes" in args.model:
-                pspnet = PSPNet101(nb_classes=19, input_shape=(713, 713), weights=args.model)
+                pspnet = PSPNet101(nb_classes=19, input_shape=(713, 713),
+                                   weights=args.model)
             if "voc2012" in args.model:
-                pspnet = PSPNet101(nb_classes=21, input_shape=(473, 473), weights=args.model)
+                pspnet = PSPNet101(nb_classes=21, input_shape=(473, 473),
+                                   weights=args.model)
 
         else:
             print("Network architecture not implemented.")
@@ -146,7 +162,8 @@ if __name__ == "__main__":
         cm = np.argmax(probs, axis=2) + 1
         pm = np.max(probs, axis=2)
         color_cm = utils.add_color(cm)
-        alpha_blended = 0.5 * color_cm * 255 + 0.5 * img  # color cm is [0.0-1.0] img [0-255]
+        # color cm is [0.0-1.0] img is [0-255]
+        alpha_blended = 0.5 * color_cm * 255 + 0.5 * img
         filename, ext = splitext(args.output_path)
         misc.imsave(filename + "_seg" + ext, color_cm)
         misc.imsave(filename + "_probs" + ext, pm)
