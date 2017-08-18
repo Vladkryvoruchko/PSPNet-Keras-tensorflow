@@ -1,6 +1,7 @@
+#!/usr/bin/env python
 from __future__ import print_function
 import os
-from os.path import splitext
+from os.path import splitext, join
 import argparse
 import numpy as np
 from scipy import misc, ndimage
@@ -19,8 +20,8 @@ class PSPNet(object):
 
     def __init__(self, nb_classes, resnet_layers, input_shape, weights):
         self.input_shape = input_shape
-        json_path = weights + ".json"
-        h5_path = weights + ".h5"
+        json_path = join("weights", "keras", weights + ".json")
+        h5_path = join("weights", "keras", weights + ".h5")
         if os.path.isfile(json_path) and os.path.isfile(h5_path):
             print("Keras model & weights found, loading...")
             with open(json_path, 'r') as file_handle:
@@ -67,9 +68,9 @@ class PSPNet(object):
         return pred[0]
 
     def set_npy_weights(self, weights_path):
-        npy_weights_path = weights_path + ".npy"
-        json_path = weights_path + ".json"
-        h5_path = weights_path + ".h5"
+        npy_weights_path = join("weights", "npy", weights_path + ".npy")
+        json_path = join("weights", "keras", weights_path + ".json")
+        h5_path = join("weights", "keras", weights_path + ".h5")
 
         print("Importing weights from %s" % npy_weights_path)
         weights = np.load(npy_weights_path).item()
@@ -126,9 +127,9 @@ if __name__ == "__main__":
                         choices=['pspnet50_ade20k',
                                  'pspnet101_cityscapes',
                                  'pspnet101_voc2012'])
-    parser.add_argument('-i', '--input_path', type=str, default='test.jpg',
+    parser.add_argument('-i', '--input_path', type=str, default='example_images/ade20k.jpg',
                         help='Path the input image')
-    parser.add_argument('-o', '--output_path', type=str, default='test.jpg',
+    parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
                         help='Path to output')
     parser.add_argument('--id', default="0")
     args = parser.parse_args()

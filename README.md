@@ -17,21 +17,30 @@ Already converted weights can be downloaded here:
 [pspnet101_cityscapes.npy](https://www.dropbox.com/s/b21j6hi6qql90l0/pspnet101_cityscapes.npy?dl=0)
 [pspnet101_voc2012.npy](https://www.dropbox.com/s/xkjmghsbn6sfj9k/pspnet101_voc2012.npy?dl=0)
 
-weights should be placed in the directory with pspnet.py
+npy weights should be placed in the directory weights/npy.
 
 The interpolation layer is implemented as custom layer "Interp"
 
 ## Important
 
 Results Keras:
-![Original](test.jpg)
+![Original](example_images/ade20k.jpg)
+![New](example_results/ade20k_seg.jpg)
+![New](example_results/ade20k_seg_blended.jpg)
+![New](example_results/ade20k_probs.jpg)
 
-![New](test_seg.jpg)
-![New](test_seg_blended.jpg)
-![New](test_probs.jpg)
+![Original](example_images/cityscapes.png)
+![New](example_results/cityscapes_seg.jpg)
+![New](example_results/cityscapes_seg_blended.jpg)
+![New](example_results/cityscapes_probs.jpg)
+
+![Original](example_images/pascal_voc.jpg)
+![New](example_results/pascal_voc_seg.jpg)
+![New](example_results/pascal_voc_seg_blended.jpg)
+![New](example_results/pascal_voc_probs.jpg)
 
 ## Pycaffe result
-![Pycaffe results](test_pycaffe.jpg)
+![Pycaffe results](example_results/ade20k_seg_pycaffe.jpg)
 ## Dependencies:
 1. Tensorflow
 2. Keras
@@ -42,5 +51,7 @@ Results Keras:
 ## Usage:
 
 ```bash
-python pspnet.py --input-path INPUT_PATH --output-path OUTPUT_PATH
+python pspnet.py
+python pspnet.py -m pspnet101_cityscapes -i example_images/cityscapes.png -o example_results/cityscapes.jpg
+python pspnet.py -m pspnet101_voc2012 -i example_images/pascal_voc.jpg -o example_results/pascal_voc.jpg
 ```
