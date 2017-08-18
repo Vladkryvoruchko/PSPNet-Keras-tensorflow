@@ -1,43 +1,57 @@
 # Keras implementation of [PSPNet(caffe)](https://github.com/hszhao/PSPNet)
 
-Implemented Architecture of pyramid scene parsing network in Keras
+Implemented Architecture of Pyramid Scene Parsing Network in Keras.
 
-Converted trained weights needed to run the network.
+Converted trained weights are needed to run the network.
 
+Weights of the original caffemodel can be converted with weight_converter.py as follows:
 
-Download converted weights here:
-[link:pspnet50_ade20k.npy](https://www.dropbox.com/s/ms8afun494dlh1t/pspnet50_ade20k.npy?dl=0)
-
-And place in directory with pspnet50_ade20k.npy
-
-Weights from caffemodel were converted by, weight_converter.py. The usage of this file is
 ```bash
 python weight_converter.py <path to .prototxt> <path to .caffemodel>
 ```
-Running this need to compile the original PSPNet caffe code and pycaffe. 
 
-Interpolation layer is implemented in code as custom layer "Interp"
+Running this needs the compiled original PSPNet caffe code and pycaffe.
+Already converted weights can be downloaded here:
+
+[pspnet50_ade20k.npy](https://www.dropbox.com/s/ms8afun494dlh1t/pspnet50_ade20k.npy?dl=0)
+[pspnet101_cityscapes.npy](https://www.dropbox.com/s/b21j6hi6qql90l0/pspnet101_cityscapes.npy?dl=0)
+[pspnet101_voc2012.npy](https://www.dropbox.com/s/xkjmghsbn6sfj9k/pspnet101_voc2012.npy?dl=0)
+
+npy weights should be placed in the directory weights/npy.
+
+The interpolation layer is implemented as custom layer "Interp"
 
 ## Important
 
 Results Keras:
-![Original](test.jpg)
+![Original](example_images/ade20k.jpg)
+![New](example_results/ade20k_seg.jpg)
+![New](example_results/ade20k_seg_blended.jpg)
+![New](example_results/ade20k_probs.jpg)
 
-![New](out.jpg)
-![New](probs.jpg)
+![Original](example_images/cityscapes.png)
+![New](example_results/cityscapes_seg.jpg)
+![New](example_results/cityscapes_seg_blended.jpg)
+![New](example_results/cityscapes_probs.jpg)
+
+![Original](example_images/pascal_voc.jpg)
+![New](example_results/pascal_voc_seg.jpg)
+![New](example_results/pascal_voc_seg_blended.jpg)
+![New](example_results/pascal_voc_probs.jpg)
 
 ## Pycaffe result
-![Pycaffe results](test_pycaffe.jpg)
+![Pycaffe results](example_results/ade20k_seg_pycaffe.jpg)
 ## Dependencies:
 1. Tensorflow
 2. Keras
 3. numpy
-4. pycaffe(PSPNet)(optional)
+4. pycaffe(PSPNet)(optional for converting the weights)
 
 
-## Usage: 
+## Usage:
 
 ```bash
-python pspnet.py --input-path INPUT_PATH --output-path OUTPUT_PATH
+python pspnet.py
+python pspnet.py -m pspnet101_cityscapes -i example_images/cityscapes.png -o example_results/cityscapes.jpg
+python pspnet.py -m pspnet101_voc2012 -i example_images/pascal_voc.jpg -o example_results/pascal_voc.jpg
 ```
-
