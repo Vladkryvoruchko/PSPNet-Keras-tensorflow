@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import os
-from os.path import splitext, join
+from __future__ import division
+from os.path import splitext, join, isfile
+from os import environ
+from math import ceil
 import argparse
 import numpy as np
 from scipy import misc, ndimage
@@ -10,19 +12,22 @@ from keras.models import model_from_json
 import tensorflow as tf
 import layers_builder as layers
 import utils
+import matplotlib.pyplot as plt
+
 
 # These are the means for the ImageNet pretrained ResNet
 DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]])  # RGB order
 
 
 class PSPNet(object):
-    """Pyramid Scene Parsing Network by Hengshuang Zhao et al 2017"""
+    """Pyramid Scene Parsing Network by Hengshuang Zhao et al 2017."""
 
     def __init__(self, nb_classes, resnet_layers, input_shape, weights):
+        """Instanciate a PSPNet."""
         self.input_shape = input_shape
         json_path = join("weights", "keras", weights + ".json")
         h5_path = join("weights", "keras", weights + ".h5")
-        if os.path.isfile(json_path) and os.path.isfile(h5_path):
+        if isfile(json_path) and isfile(h5_path):
             print("Keras model & weights found, loading...")
             with open(json_path, 'r') as file_handle:
                 self.model = model_from_json(file_handle.read())
@@ -42,32 +47,32 @@ class PSPNet(object):
             img: must be rowsxcolsx3
         """
         h_ori, w_ori = img.shape[:2]
-
-        # Preprocess
         img = misc.imresize(img, self.input_shape)
-
-        img = img - DATA_MEAN
-        img = img[:, :, ::-1]  # RGB => BGR
-        img = img.astype('float32')
-        print("Predicting...")
-
+        img = self.preprocess_image(img)
         probs = self.feed_forward(img)
         h, w = probs.shape[:2]
         probs = ndimage.zoom(probs, (1.*h_ori/h, 1.*w_ori/w, 1.),
                              order=1, prefilter=False)
-        print("Finished prediction...")
-
         return probs
 
+    def preprocess_image(self, img):
+        """Preprocess an image as input."""
+        float_img = img.astype('float16')
+        centered_image = float_img - DATA_MEAN
+        return centered_image
+
     def feed_forward(self, data):
+        """Pass an image through the network."""
         assert data.shape == (self.input_shape[0], self.input_shape[1], 3)
-        data = data[np.newaxis, :, :, :]
+        data = data[:, :, ::-1]  # RGB => BGR
+        data = data[np.newaxis, :, :, :]  # Append sample dimension for keras
 
         # utils.debug(self.model, data)
         pred = self.model.predict(data)
         return pred[0]
 
     def set_npy_weights(self, weights_path):
+        """Set weights from the intermediary npy file."""
         npy_weights_path = join("weights", "npy", weights_path + ".npy")
         json_path = join("weights", "keras", weights_path + ".json")
         h5_path = join("weights", "keras", weights_path + ".h5")
@@ -75,8 +80,11 @@ class PSPNet(object):
         print("Importing weights from %s" % npy_weights_path)
         weights = np.load(npy_weights_path).item()
 
+        whitelist = ["InputLayer", "Activation", "ZeroPadding2D", "Add", "MaxPooling2D", "AveragePooling2D", "Lambda", "Concatenate", "Dropout"]
+
+        weights_set = 0
         for layer in self.model.layers:
-            print(layer.name)
+            print("Processing %s" % layer.name)
             if layer.name[:4] == 'conv' and layer.name[-2:] == 'bn':
                 mean = weights[layer.name]['mean'].reshape(-1)
                 variance = weights[layer.name]['variance'].reshape(-1)
@@ -85,15 +93,24 @@ class PSPNet(object):
 
                 self.model.get_layer(layer.name).set_weights([mean, variance,
                                                              scale, offset])
-
+                weights_set += 1
             elif layer.name[:4] == 'conv' and not layer.name[-4:] == 'relu':
                 try:
                     weight = weights[layer.name]['weights']
                     self.model.get_layer(layer.name).set_weights([weight])
-                except Exception as err:
+                except Exception:
                     biases = weights[layer.name]['biases']
                     self.model.get_layer(layer.name).set_weights([weight,
                                                                  biases])
+                weights_set += 1
+            elif layer.__class__.__name__ in whitelist:
+                # print("Nothing to set in %s" % layer.__class__.__name__)
+                pass
+            else:
+                print("Warning: Did not find weights for keras layer %s in numpy weights" % layer)
+
+        print("Set a total of %i weights" % weights_set)
+
         print('Finished importing weights.')
 
         print("Writing keras model & weights")
@@ -108,6 +125,7 @@ class PSPNet50(PSPNet):
     """Build a PSPNet based on a 50-Layer ResNet."""
 
     def __init__(self, nb_classes, weights, input_shape):
+        """Instanciate a PSPNet50."""
         PSPNet.__init__(self, nb_classes=nb_classes, resnet_layers=50,
                         input_shape=input_shape, weights=weights)
 
@@ -116,8 +134,56 @@ class PSPNet101(PSPNet):
     """Build a PSPNet based on a 101-Layer ResNet."""
 
     def __init__(self, nb_classes, weights, input_shape):
+        """Instanciate a PSPNet101."""
         PSPNet.__init__(self, nb_classes=nb_classes, resnet_layers=101,
                         input_shape=input_shape, weights=weights)
+
+
+def pad_image(img, target_size):
+    """Pad an image up to the target size."""
+    rows_missing = target_size[0] - img.shape[0]
+    cols_missing = target_size[1] - img.shape[1]
+    padded_img = np.pad(img, ((0, rows_missing), (0, cols_missing), (0, 0)), 'constant')
+    return padded_img
+
+
+def sliding_prediction(full_image, net):
+    """Predict on tiles of exactly the network input shape so nothing gets squeezed."""
+    tile_size = net.input_shape
+    classes = net.model.outputs[0].shape[3]
+    overlap = 1/3
+
+    stride = ceil(tile_size[0] * (1 - overlap))
+    tile_rows = int(ceil((full_image.shape[0] - tile_size[0]) / stride) + 1)  # strided convolution formula
+    tile_cols = int(ceil((full_image.shape[1] - tile_size[1]) / stride) + 1)
+    print("Need %i x %i prediction tiles @ stride %i px" % (tile_cols, tile_rows, stride))
+    full_probs = np.zeros((full_image.shape[0], full_image.shape[1], classes))
+    count_predictions = np.zeros((full_image.shape[0], full_image.shape[1], classes))
+    tile_counter = 0
+    for row in range(tile_rows):
+        for col in range(tile_cols):
+            x1 = int(col * stride)
+            y1 = int(row * stride)
+            x2 = min(x1 + tile_size[1], full_image.shape[1])
+            y2 = min(y1 + tile_size[0], full_image.shape[0])
+            x1 = int(x2 - tile_size[1])
+            y1 = int(y2 - tile_size[0])
+            if x1 < 0: # for portrait the x1 underflows sometimes 
+                x1 = 0
+            img = full_image[y1:y2, x1:x2]
+            padded_img = pad_image(img, tile_size)
+            # plt.imshow(padded_img)
+            # plt.show()
+            tile_counter += 1
+            print("Predicting tile %i" % tile_counter)
+            padded_prediction = net.predict(padded_img)
+            prediction = padded_prediction[0:img.shape[0], 0:img.shape[1], :]
+            count_predictions[y1:y2, x1:x2] += 1
+            full_probs[y1:y2, x1:x2] += prediction  # accumulate the predictions also in the overlapping regions
+
+    # average the predictions in the overlapping regions
+    full_probs /= count_predictions
+    return full_probs
 
 
 if __name__ == "__main__":
@@ -132,9 +198,11 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
                         help='Path to output')
     parser.add_argument('--id', default="0")
+    parser.add_argument('-s', '--sliding_prediction', type=bool, default=False,
+                        help="Whether the network should be slided along the original image for prediction.")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.id
+    environ["CUDA_VISIBLE_DEVICES"] = args.id
 
     sess = tf.Session()
     K.set_session(sess)
@@ -157,7 +225,13 @@ if __name__ == "__main__":
         else:
             print("Network architecture not implemented.")
 
-        probs = pspnet.predict(img)
+        # TODO: implement score flips
+
+        if args.sliding_prediction:
+            probs = sliding_prediction(img, pspnet)
+        else:
+            probs = pspnet.predict(img)
+
         print("Writing results...")
 
         cm = np.argmax(probs, axis=2) + 1

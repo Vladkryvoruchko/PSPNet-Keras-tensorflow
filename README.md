@@ -21,9 +21,7 @@ npy weights should be placed in the directory weights/npy.
 
 The interpolation layer is implemented as custom layer "Interp"
 
-## Important
-
-Results Keras:
+## Keras result:
 ![Original](example_images/ade20k.jpg)
 ![New](example_results/ade20k_seg.jpg)
 ![New](example_results/ade20k_seg_blended.jpg)
@@ -39,14 +37,21 @@ Results Keras:
 ![New](example_results/pascal_voc_seg_blended.jpg)
 ![New](example_results/pascal_voc_probs.jpg)
 
-## Pycaffe result
+## Pycaffe result:
 ![Pycaffe results](example_results/ade20k_seg_pycaffe.jpg)
+
 ## Dependencies:
-1. Tensorflow
+
+
+1. Tensorflow (-gpu)
 2. Keras
 3. numpy
+4. scipy
 4. pycaffe(PSPNet)(optional for converting the weights)
 
+```bash
+pip install -r requirements.txt --upgrade
+```
 
 ## Usage:
 
