@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+This module is a Keras/Tensorflow based implementation of Pyramid Scene Parsing Networks.
+
+Original paper & code published by Hengshuang Zhao et al. (2017)
+"""
 from __future__ import print_function
 from __future__ import division
 from os.path import splitext, join, isfile
@@ -13,6 +18,8 @@ import tensorflow as tf
 import layers_builder as layers
 import utils
 import matplotlib.pyplot as plt
+
+__author__ = "Vlad Kryvoruchko, Jeffrey Hu & Julian Tatsch"
 
 
 # These are the means for the ImageNet pretrained ResNet
@@ -39,7 +46,7 @@ class PSPNet(object):
                                              input_shape=self.input_shape)
             self.set_npy_weights(weights)
 
-    def predict(self, img):
+    def predict(self, img, flip_evaluation):
         """
         Predict segementation for an image.
 
@@ -47,29 +54,32 @@ class PSPNet(object):
             img: must be rowsxcolsx3
         """
         h_ori, w_ori = img.shape[:2]
-        img = misc.imresize(img, self.input_shape)
-        img = self.preprocess_image(img)
-        probs = self.feed_forward(img)
-        h, w = probs.shape[:2]
-        probs = ndimage.zoom(probs, (1.*h_ori/h, 1.*w_ori/w, 1.),
-                             order=1, prefilter=False)
-        return probs
+        if img.shape[0:2] != self.input_shape:
+            print("Input %s not fitting for network size %s, resizing. You may want to try sliding prediction for better results." % (img.shape[0:2], self.input_shape))
+            img = misc.imresize(img, self.input_shape)
+        input_data = self.preprocess_image(img)
+        # utils.debug(self.model, input_data)
+
+        regular_prediction = self.model.predict(input_data)[0]
+        if flip_evaluation:
+            flipped_prediction = np.fliplr(self.model.predict(np.flip(input_data, axis=2))[0])
+            prediction = (regular_prediction + flipped_prediction)
+        else:
+            prediction = regular_prediction
+
+        if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
+            h, w = prediction.shape[:2]
+            prediction = ndimage.zoom(prediction, (1.*h_ori/h, 1.*w_ori/w, 1.),
+                                      order=1, prefilter=False)
+        return prediction
 
     def preprocess_image(self, img):
         """Preprocess an image as input."""
         float_img = img.astype('float16')
         centered_image = float_img - DATA_MEAN
-        return centered_image
-
-    def feed_forward(self, data):
-        """Pass an image through the network."""
-        assert data.shape == (self.input_shape[0], self.input_shape[1], 3)
-        data = data[:, :, ::-1]  # RGB => BGR
-        data = data[np.newaxis, :, :, :]  # Append sample dimension for keras
-
-        # utils.debug(self.model, data)
-        pred = self.model.predict(data)
-        return pred[0]
+        bgr_image = centered_image[:, :, ::-1]  # RGB => BGR
+        input_data = bgr_image[np.newaxis, :, :, :]  # Append sample dimension for keras
+        return input_data
 
     def set_npy_weights(self, weights_path):
         """Set weights from the intermediary npy file."""
@@ -147,19 +157,8 @@ def pad_image(img, target_size):
     return padded_img
 
 
-def predict(img, net, flip_evaluation):
-    """Predict an image and allow flipped evaluation."""
-    regular_prediction = net.predict(img)
-    if flip_evaluation:
-        flipped_prediction = np.fliplr(net.predict(np.fliplr(img)))
-        prediction = (regular_prediction + flipped_prediction)
-
-    else:
-        prediction = regular_prediction
-    return prediction
-
-
-def prediction_to_image(prediction):
+def visualize_prediction(prediction):
+    """Visualize prediction."""
     cm = np.argmax(prediction, axis=2) + 1
     color_cm = utils.add_color(cm)
     plt.imshow(color_cm)
@@ -187,7 +186,7 @@ def sliding_prediction(full_image, net, flip_evaluation):
             y2 = min(y1 + tile_size[0], full_image.shape[0])
             x1 = int(x2 - tile_size[1])
             y1 = int(y2 - tile_size[0])
-            if x1 < 0:  # for portrait the x1 underflows sometimes
+            if x1 < 0:  # for portrait images the x1 underflows sometimes
                 x1 = 0
             img = full_image[y1:y2, x1:x2]
             padded_img = pad_image(img, tile_size)
@@ -195,13 +194,16 @@ def sliding_prediction(full_image, net, flip_evaluation):
             # plt.show()
             tile_counter += 1
             print("Predicting tile %i" % tile_counter)
-            padded_prediction = predict(padded_img, net, flip_evaluation)
+            padded_prediction = net.predict(padded_img, flip_evaluation)
             prediction = padded_prediction[0:img.shape[0], 0:img.shape[1], :]
             count_predictions[y1:y2, x1:x2] += 1
             full_probs[y1:y2, x1:x2] += prediction  # accumulate the predictions also in the overlapping regions
 
     # average the predictions in the overlapping regions
     full_probs /= count_predictions
+    # visualize normalization Weights
+    # plt.imshow(np.mean(count_predictions, axis=2))
+    # plt.show()
     return full_probs
 
 
@@ -251,7 +253,7 @@ if __name__ == "__main__":
         if args.sliding_prediction:
             probs = sliding_prediction(img, pspnet, args.flip_evaluation)
         else:
-            probs = pspnet.predict(img)
+            probs = pspnet.predict(img, args.flip_evaluation)
 
         print("Writing results...")
 
