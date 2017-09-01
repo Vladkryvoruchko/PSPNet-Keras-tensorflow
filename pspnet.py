@@ -19,7 +19,7 @@ import layers_builder as layers
 import utils
 import matplotlib.pyplot as plt
 
-__author__ = "Vlad Kryvoruchko, Jeffrey Hu & Julian Tatsch"
+__author__ = "Vlad Kryvoruchko, Chaoyue Wang, Jeffrey Hu & Julian Tatsch"
 
 
 # These are the means for the ImageNet pretrained ResNet
