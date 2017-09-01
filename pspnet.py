@@ -147,7 +147,26 @@ def pad_image(img, target_size):
     return padded_img
 
 
-def sliding_prediction(full_image, net):
+def predict(img, net, flip_evaluation):
+    """Predict an image and allow flipped evaluation."""
+    regular_prediction = net.predict(img)
+    if flip_evaluation:
+        flipped_prediction = np.fliplr(net.predict(np.fliplr(img)))
+        prediction = (regular_prediction + flipped_prediction)
+
+    else:
+        prediction = regular_prediction
+    return prediction
+
+
+def prediction_to_image(prediction):
+    cm = np.argmax(prediction, axis=2) + 1
+    color_cm = utils.add_color(cm)
+    plt.imshow(color_cm)
+    plt.show()
+
+
+def sliding_prediction(full_image, net, flip_evaluation):
     """Predict on tiles of exactly the network input shape so nothing gets squeezed."""
     tile_size = net.input_shape
     classes = net.model.outputs[0].shape[3]
@@ -168,7 +187,7 @@ def sliding_prediction(full_image, net):
             y2 = min(y1 + tile_size[0], full_image.shape[0])
             x1 = int(x2 - tile_size[1])
             y1 = int(y2 - tile_size[0])
-            if x1 < 0: # for portrait the x1 underflows sometimes 
+            if x1 < 0:  # for portrait the x1 underflows sometimes
                 x1 = 0
             img = full_image[y1:y2, x1:x2]
             padded_img = pad_image(img, tile_size)
@@ -176,7 +195,7 @@ def sliding_prediction(full_image, net):
             # plt.show()
             tile_counter += 1
             print("Predicting tile %i" % tile_counter)
-            padded_prediction = net.predict(padded_img)
+            padded_prediction = predict(padded_img, net, flip_evaluation)
             prediction = padded_prediction[0:img.shape[0], 0:img.shape[1], :]
             count_predictions[y1:y2, x1:x2] += 1
             full_probs[y1:y2, x1:x2] += prediction  # accumulate the predictions also in the overlapping regions
@@ -198,8 +217,10 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
                         help='Path to output')
     parser.add_argument('--id', default="0")
-    parser.add_argument('-s', '--sliding_prediction', type=bool, default=False,
+    parser.add_argument('-s', '--sliding_prediction', action='store_true',
                         help="Whether the network should be slided along the original image for prediction.")
+    parser.add_argument('-fe', '--flip_evaluation', action='store_true',
+                        help="Whether the network should evaluate both image and flipped image.")
     args = parser.parse_args()
 
     environ["CUDA_VISIBLE_DEVICES"] = args.id
@@ -228,7 +249,7 @@ if __name__ == "__main__":
         # TODO: implement score flips
 
         if args.sliding_prediction:
-            probs = sliding_prediction(img, pspnet)
+            probs = sliding_prediction(img, pspnet, args.flip_evaluation)
         else:
             probs = pspnet.predict(img)
 
