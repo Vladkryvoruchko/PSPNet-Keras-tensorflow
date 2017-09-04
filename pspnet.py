@@ -24,6 +24,7 @@ __author__ = "Vlad Kryvoruchko, Chaoyue Wang, Jeffrey Hu & Julian Tatsch"
 
 # These are the means for the ImageNet pretrained ResNet
 DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]])  # RGB order
+EVALUATION_SCALES = [1.0]  # must be all floats!
 
 
 class PSPNet(object):
@@ -62,6 +63,7 @@ class PSPNet(object):
 
         regular_prediction = self.model.predict(input_data)[0]
         if flip_evaluation:
+            print("Predict flipped")
             flipped_prediction = np.fliplr(self.model.predict(np.flip(input_data, axis=2))[0])
             prediction = (regular_prediction + flipped_prediction)
         else:
@@ -165,7 +167,7 @@ def visualize_prediction(prediction):
     plt.show()
 
 
-def sliding_prediction(full_image, net, flip_evaluation):
+def predict_sliding(full_image, net, flip_evaluation):
     """Predict on tiles of exactly the network input shape so nothing gets squeezed."""
     tile_size = net.input_shape
     classes = net.model.outputs[0].shape[3]
@@ -184,10 +186,9 @@ def sliding_prediction(full_image, net, flip_evaluation):
             y1 = int(row * stride)
             x2 = min(x1 + tile_size[1], full_image.shape[1])
             y2 = min(y1 + tile_size[0], full_image.shape[0])
-            x1 = int(x2 - tile_size[1])
-            y1 = int(y2 - tile_size[0])
-            if x1 < 0:  # for portrait images the x1 underflows sometimes
-                x1 = 0
+            x1 = max(int(x2 - tile_size[1]), 0)  # for portrait images the x1 underflows sometimes
+            y1 = max(int(y2 - tile_size[0]), 0)  # for very few rows y1 underflows
+
             img = full_image[y1:y2, x1:x2]
             padded_img = pad_image(img, tile_size)
             # plt.imshow(padded_img)
@@ -207,6 +208,29 @@ def sliding_prediction(full_image, net, flip_evaluation):
     return full_probs
 
 
+def predict_multi_scale(full_image, net, scales, sliding_evaluation, flip_evaluation):
+    """Predict an image by looking at it with different scales."""
+    classes = net.model.outputs[0].shape[3]
+    full_probs = np.zeros((full_image.shape[0], full_image.shape[1], classes))
+    h_ori, w_ori = full_image.shape[:2]
+    for scale in scales:
+        print("Predicting image scaled by %f" % scale)
+        scaled_img = misc.imresize(full_image, size=scale, interp="bilinear")
+        if sliding_evaluation:
+            scaled_probs = predict_sliding(scaled_img, net, flip_evaluation)
+        else:
+            scaled_probs = net.predict(scaled_img, flip_evaluation)
+        # scale probs up to full size
+        h, w = scaled_probs.shape[:2]
+        probs = ndimage.zoom(scaled_probs, (1.*h_ori/h, 1.*w_ori/w, 1.),  # FIXME: must scale up exactly to full_image.shape
+                             order=1, prefilter=False)
+        # visualize_prediction(probs)
+        # integrate probs over all scales
+        full_probs += probs
+    full_probs /= len(scales)
+    return full_probs
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', type=str, default='pspnet50_ade20k',
@@ -219,10 +243,12 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
                         help='Path to output')
     parser.add_argument('--id', default="0")
-    parser.add_argument('-s', '--sliding_prediction', action='store_true',
-                        help="Whether the network should be slided along the original image for prediction.")
-    parser.add_argument('-fe', '--flip_evaluation', action='store_true',
-                        help="Whether the network should evaluate both image and flipped image.")
+    parser.add_argument('-s', '--sliding', action='store_true',
+                        help="Whether the network should be slided over the original image for prediction.")
+    parser.add_argument('-f', '--flip', action='store_true',
+                        help="Whether the network should predict on both image and flipped image.")
+    parser.add_argument('-ms', '--multi_scale', action='store_true',
+                        help="Whether the network should predict on multiple scales.")
     args = parser.parse_args()
 
     environ["CUDA_VISIBLE_DEVICES"] = args.id
@@ -248,12 +274,10 @@ if __name__ == "__main__":
         else:
             print("Network architecture not implemented.")
 
-        # TODO: implement score flips
+        if args.multi_scale:
+            EVALUATION_SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]  # must be all floats!
 
-        if args.sliding_prediction:
-            probs = sliding_prediction(img, pspnet, args.flip_evaluation)
-        else:
-            probs = pspnet.predict(img, args.flip_evaluation)
+        probs = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
 
         print("Writing results...")
 
