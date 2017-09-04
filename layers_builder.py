@@ -6,8 +6,6 @@ from keras.layers.merge import Concatenate, Add
 from keras.models import Model
 from keras.optimizers import SGD
 
-import tensorflow as tf
-
 learning_rate = 1e-3  # Layer specific learning rate
 # Weight decay not implemented
 
@@ -118,7 +116,7 @@ def ResNet(inp, layers):
     cnv1 = Conv2D(64, (3, 3), strides=(1, 1), padding='same', name=names[2],
                   use_bias=False)(relu1)  # "conv1_2_3x3"
     bn1 = BN(name=names[3])(cnv1)  # "conv1_2_3x3/bn"
-    relu1 = Activation('relu')(bn1)                 # "conv1_2_3x3/relu"
+    relu1 = Activation('relu')(bn1)  # "conv1_2_3x3/relu"
 
     cnv1 = Conv2D(128, (3, 3), strides=(1, 1), padding='same', name=names[4],
                   use_bias=False)(relu1)  # "conv1_3_3x3"
@@ -167,7 +165,6 @@ def ResNet(inp, layers):
 
 
 def interp_block(prev_layer, level, feature_map_shape, str_lvl=1, ):
-
     str_lvl = str(str_lvl)
 
     names = [
@@ -186,7 +183,7 @@ def interp_block(prev_layer, level, feature_map_shape, str_lvl=1, ):
     return prev_layer
 
 
-def PSPNet(res, input_shape):
+def build_pyramid_pooling_module(res, input_shape):
     """Build the Pyramid Pooling Module."""
     # ---PSPNet concat layers with Interpolation
     feature_map_size = tuple(int(ceil(input_dim / 8.0)) for input_dim in input_shape)
@@ -197,7 +194,7 @@ def PSPNet(res, input_shape):
     interp_block3 = interp_block(res, 2, feature_map_size, str_lvl=3)
     interp_block6 = interp_block(res, 1, feature_map_size, str_lvl=6)
 
-    # concat all these layers. resulted shape=(1,60,60,4096)
+    # concat all these layers. resulted shape=(1,feature_map_size_x,feature_map_size_y,4096)
     res = Concatenate()([res,
                          interp_block6,
                          interp_block3,
@@ -212,7 +209,7 @@ def build_pspnet(nb_classes, resnet_layers, input_shape, activation='softmax'):
 
     inp = Input((input_shape[0], input_shape[1], 3))
     res = ResNet(inp, layers=resnet_layers)
-    psp = PSPNet(res, input_shape)
+    psp = build_pyramid_pooling_module(res, input_shape)
 
     x = Conv2D(512, (3, 3), strides=(1, 1), padding="same", name="conv5_4",
                use_bias=False)(psp)

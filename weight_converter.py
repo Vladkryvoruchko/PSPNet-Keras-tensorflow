@@ -34,7 +34,7 @@ for k, v in net.params.items():
         W = np.transpose(W, (2, 3, 1, 0))
         b = v[1].data[...]
         weights[k] = {"weights": W, "biases": b}
-    elif len(v) == 4:
+    elif len(v) == 4:  # Batchnorm layer
         k = k.replace('/', '_')
         mean = v[0].data[...]
         variance = v[1].data[...]
