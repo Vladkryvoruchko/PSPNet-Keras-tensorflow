@@ -65,7 +65,7 @@ class PSPNet(object):
         if flip_evaluation:
             print("Predict flipped")
             flipped_prediction = np.fliplr(self.model.predict(np.flip(input_data, axis=2))[0])
-            prediction = (regular_prediction + flipped_prediction)
+            prediction = (regular_prediction + flipped_prediction) / 2.0
         else:
             prediction = regular_prediction
 
@@ -222,7 +222,7 @@ def predict_multi_scale(full_image, net, scales, sliding_evaluation, flip_evalua
             scaled_probs = net.predict(scaled_img, flip_evaluation)
         # scale probs up to full size
         h, w = scaled_probs.shape[:2]
-        probs = ndimage.zoom(scaled_probs, (1.*h_ori/h, 1.*w_ori/w, 1.),  # FIXME: must scale up exactly to full_image.shape
+        probs = ndimage.zoom(scaled_probs, (1.*h_ori/h, 1.*w_ori/w, 1.),
                              order=1, prefilter=False)
         # visualize_prediction(probs)
         # integrate probs over all scales
@@ -276,17 +276,18 @@ if __name__ == "__main__":
 
         if args.multi_scale:
             EVALUATION_SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]  # must be all floats!
+            EVALUATION_SCALES = [0.15, 0.25, 0.5]  # must be all floats!
 
-        probs = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
+        class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
 
         print("Writing results...")
 
-        cm = np.argmax(probs, axis=2) + 1
-        pm = np.max(probs, axis=2)
-        color_cm = utils.add_color(cm)
-        # color cm is [0.0-1.0] img is [0-255]
-        alpha_blended = 0.5 * color_cm * 255 + 0.5 * img
+        class_image = np.argmax(class_scores, axis=2)
+        pm = np.max(class_scores, axis=2)
+        colored_class_image = utils.color_class_image(class_image, args.model)
+        # colored_class_image is [0.0-1.0] img is [0-255]
+        alpha_blended = 0.5 * colored_class_image + 0.5 * img
         filename, ext = splitext(args.output_path)
-        misc.imsave(filename + "_seg" + ext, color_cm)
+        misc.imsave(filename + "_seg" + ext, colored_class_image)
         misc.imsave(filename + "_probs" + ext, pm)
         misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
