@@ -90,7 +90,7 @@ class PSPNet(object):
         h5_path = join("weights", "keras", weights_path + ".h5")
 
         print("Importing weights from %s" % npy_weights_path)
-        weights = np.load(npy_weights_path).item()
+        weights = np.load(npy_weights_path, encoding="latin1").item()
 
         whitelist = ["InputLayer", "Activation", "ZeroPadding2D", "Add", "MaxPooling2D", "AveragePooling2D", "Lambda", "Concatenate", "Dropout"]
 
