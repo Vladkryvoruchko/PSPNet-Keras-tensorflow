@@ -8,7 +8,7 @@ from keras.optimizers import SGD
 
 import tensorflow as tf
 
-learning_rate = 1e-3  # Layer specific learning rate
+learning_rate = 1e-2# Layer specific learning rate
 # Weight decay not implemented
 
 

@@ -38,3 +38,4 @@ def print_activation(model, layer_name, data):
 def array_to_str(a):
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a),
                                    np.max(a), np.mean(a))
+
