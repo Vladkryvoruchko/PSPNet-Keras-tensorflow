@@ -61,13 +61,13 @@ class PSPNet(object):
         input_data = self.preprocess_image(img)
         # utils.debug(self.model, input_data)
 
-        regular_prediction = self.model.predict(input_data)[0]
         if flip_evaluation:
             print("Predict flipped")
-            flipped_prediction = np.fliplr(self.model.predict(np.flip(input_data, axis=2))[0])
-            prediction = (regular_prediction + flipped_prediction) / 2.0
+            input_with_flipped = np.array([input_data, np.flip(input_data, axis=1)])
+            prediction_with_flipped = self.model.predict(input_with_flipped)
+            prediction = (prediction_with_flipped[0] + np.fliplr(prediction_with_flipped[1])) / 2.0
         else:
-            prediction = regular_prediction
+            prediction = self.model.predict(np.expand_dims(input_data, 0))[0]
 
         if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
             h, w = prediction.shape[:2]
@@ -80,7 +80,7 @@ class PSPNet(object):
         float_img = img.astype('float16')
         centered_image = float_img - DATA_MEAN
         bgr_image = centered_image[:, :, ::-1]  # RGB => BGR
-        input_data = bgr_image[np.newaxis, :, :, :]  # Append sample dimension for keras
+        input_data = bgr_image#bgr_image[np.newaxis, :, :, :]  # Append sample dimension for keras
         return input_data
 
     def set_npy_weights(self, weights_path):
