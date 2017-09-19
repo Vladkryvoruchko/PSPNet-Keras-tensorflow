@@ -16,10 +16,14 @@ Implemented Architecture of Pyramid Scene Parsing Network in Keras.
 Weights(in ```.npy``` format) have to be downloaded and placed into directory ``` weights/npy ```
 \
 Already converted weights can be downloaded here:
-[pspnet50_ade20k.npy](https://www.dropbox.com/s/ms8afun494dlh1t/pspnet50_ade20k.npy?dl=0) [pspnet101_cityscapes.npy](https://www.dropbox.com/s/b21j6hi6qql90l0/pspnet101_cityscapes.npy?dl=0) [pspnet101_voc2012.npy](https://www.dropbox.com/s/xkjmghsbn6sfj9k/pspnet101_voc2012.npy?dl=0)
+
+[pspnet50_ade20k.npy](https://www.dropbox.com/s/ms8afun494dlh1t/pspnet50_ade20k.npy?dl=0)
+[pspnet101_cityscapes.npy](https://www.dropbox.com/s/b21j6hi6qql90l0/pspnet101_cityscapes.npy?dl=0)
+[pspnet101_voc2012.npy](https://www.dropbox.com/s/xkjmghsbn6sfj9k/pspnet101_voc2012.npy?dl=0)
 Weights are **automatically** converted to the ```json/h5``` format on **first start**
 \
-(*optional*)If you want to convert by yourself original caffemodel, it can be converted with ```weight_converter.py``` 
+(*optional*)If you want to convert by yourself original caffemodel, it can be converted with ```weight_converter.py```
+
 Running this needs the compiled original PSPNet caffe code and pycaffe.
     ```bash
     python weight_converter.py <path to .prototxt> <path to .caffemodel>
