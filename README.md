@@ -27,9 +27,11 @@ Weights are **automatically** converted to the ```json/h5``` format on **first s
 (*optional*)If you want to convert by yourself original caffemodel, it can be converted with ```weight_converter.py```
 
 Running this needs the compiled original PSPNet caffe code and pycaffe.
-    ```bash
-    python weight_converter.py <path to .prototxt> <path to .caffemodel>
-    ```
+
+```bash
+python weight_converter.py <path to .prototxt> <path to .caffemodel>
+```
+
 ## Usage:
 
 ```bash
