@@ -4,12 +4,12 @@ import numpy as np
 
 from keras.models import Model
 
-
-def add_color(img):
+def add_color(img, num_classes=32):
     h, w = img.shape
     img_color = np.zeros((h, w, 3))
     for i in xrange(1, 151):
         img_color[img == i] = to_color(i)
+    img_color[img == num_classes] = (1.0, 1.0, 1.0)
     return img_color
 
 
@@ -38,4 +38,3 @@ def print_activation(model, layer_name, data):
 def array_to_str(a):
     return "{} {} {} {} {}".format(a.dtype, a.shape, np.min(a),
                                    np.max(a), np.mean(a))
-

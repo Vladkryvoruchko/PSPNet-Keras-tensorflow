@@ -43,7 +43,7 @@ def set_npy_weights(weights_path, model):
             if layer.name == 'activation_52':
                 break
 
-def train(datadir, logdir, input_size, nb_classes, resnet_layers, batchsize, weights, initial_epoch, pre_trained):
+def train(datadir, logdir, input_size, nb_classes, resnet_layers, batchsize, weights, initial_epoch, pre_trained, sep):
     if args.weights:
     	model = load_model(weights)
     else:
@@ -51,9 +51,13 @@ def train(datadir, logdir, input_size, nb_classes, resnet_layers, batchsize, wei
                          resnet_layers=resnet_layers,
                          input_shape=input_size)
         set_npy_weights(pre_trained, model)
+    dataset_len = len(os.listdir(os.path.join(datadir, 'imgs')))
+    train_generator, val_generator = data_generator_s31(datadir=datadir, batch_size=batchsize, input_size=input_size, nb_classes=nb_classes, separator=sep)
+    #import ipdb; ipdb.set_trace()
     model.fit_generator(
-        data_generator_s31(datadir=datadir, batch_size=batchsize, input_size=input_size, nb_classes=nb_classes),
-        epochs=100000, verbose=True, steps_per_epoch=50, callbacks=callbacks(logdir), initial_epoch=initial_epoch)
+        generator=train_generator, 
+        epochs=100000, verbose=True, steps_per_epoch=500,
+        callbacks=callbacks(logdir), initial_epoch=initial_epoch)
 
 class PSPNet(object):
     """Pyramid Scene Parsing Network by Hengshuang Zhao et al 2017"""
@@ -69,9 +73,9 @@ class PSPNet(object):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_dim', type=int, default=473)
-    parser.add_argument('--classes', type=int, default=32)
+    parser.add_argument('--classes', type=int, default=2)
     parser.add_argument('--resnet_layers', type=int, default=50)
-    parser.add_argument('--batch', type=int, default=4)
+    parser.add_argument('--batch', type=int, default=2)
     parser.add_argument('--datadir', type=str, required=True)
     parser.add_argument('--logdir', type=str)
     parser.add_argument('--weights', type=str, default=None)
@@ -82,9 +86,10 @@ if __name__ == '__main__':
                                  'pspnet101_cityscapes',
                                  'pspnet101_voc2012'])
     parser.add_argument('--gpu', type=int, default=0)
+    parser.add_argument('--sep', default=').')
     args = parser.parse_args()
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
-    train(args.datadir, args.logdir, (args.input_dim, args.input_dim), args.classes, args.resnet_layers, args.batch, args.weights, args.initial_epoch, args.model)
+    train(args.datadir, args.logdir, (640, 480), args.classes, args.resnet_layers, args.batch, args.weights, args.initial_epoch, args.model, args.sep)
 

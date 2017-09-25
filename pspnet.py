@@ -153,7 +153,7 @@ if __name__ == "__main__":
     K.set_session(sess)
 
     with sess.as_default():
-        img = misc.imread(args.input_path)
+        img = misc.imread(args.input_path, mode='RGB')
         cimg = misc.imresize(img, (args.input_size, args.input_size))
         print(args)
         #import ipdb; ipdb.set_trace()
@@ -172,7 +172,7 @@ if __name__ == "__main__":
             else:
                 print("Network architecture not implemented.")
         else:
-            pspnet = PSPNet50(nb_classes=32, input_shape=(args.input_size, args.input_size), weights=args.weights)
+            pspnet = PSPNet50(nb_classes=2, input_shape=(640, 480), weights=args.weights)
         probs = pspnet.predict(img, args.flip)
         print("Writing results...")
         #import ipdb; ipdb.set_trace()
