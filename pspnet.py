@@ -6,8 +6,8 @@ Original paper & code published by Hengshuang Zhao et al. (2017)
 """
 from __future__ import print_function
 from __future__ import division
-from os.path import splitext, join, isfile
-from os import environ
+from os.path import splitext, join, isfile, isdir, basename
+from os import environ, mkdir
 from math import ceil
 import argparse
 import numpy as np
@@ -18,6 +18,7 @@ import tensorflow as tf
 import layers_builder as layers
 import utils
 import matplotlib.pyplot as plt
+from glob import glob
 
 __author__ = "Vlad Kryvoruchko, Chaoyue Wang, Jeffrey Hu & Julian Tatsch"
 
@@ -70,6 +71,7 @@ class PSPNet(object):
             prediction = regular_prediction
 
         if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
+            print("Upscaling due to resize")
             h, w = prediction.shape[:2]
             prediction = ndimage.zoom(prediction, (1.*h_ori/h, 1.*w_ori/w, 1.),
                                       order=1, prefilter=False)
@@ -240,6 +242,8 @@ if __name__ == "__main__":
                                  'pspnet101_voc2012'])
     parser.add_argument('-i', '--input_path', type=str, default='example_images/ade20k.jpg',
                         help='Path the input image')
+    parser.add_argument('-g', '--glob_path', type=str, default=None,
+                        help='Glob path for multiple images')
     parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
                         help='Path to output')
     parser.add_argument('--id', default="0")
@@ -251,13 +255,22 @@ if __name__ == "__main__":
                         help="Whether the network should predict on multiple scales.")
     args = parser.parse_args()
 
+    # Handle input and output args
+    images = glob(args.glob_path) if args.glob_path else [args.input_path,]
+    if args.glob_path:
+        fn, ext = splitext(args.output_path)
+        if ext:
+            parser.error("output_path should be a folder for multiple file input")
+        if not isdir(args.output_path):
+            mkdir(args.output_path)
+
+    # Predict
     environ["CUDA_VISIBLE_DEVICES"] = args.id
 
     sess = tf.Session()
     K.set_session(sess)
 
     with sess.as_default():
-        img = misc.imread(args.input_path)
         print(args)
 
         if "pspnet50" in args.model:
@@ -278,16 +291,25 @@ if __name__ == "__main__":
             EVALUATION_SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]  # must be all floats!
             EVALUATION_SCALES = [0.15, 0.25, 0.5]  # must be all floats!
 
-        class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
+        for i, img_path in enumerate(images):
+            print("Processing image {} / {}".format(i+1,len(images)))
+            img = misc.imread(img_path)
+            class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
 
-        print("Writing results...")
+            print("Combine predictions...")
+            class_image = np.argmax(class_scores, axis=2)
+            pm = np.max(class_scores, axis=2)
+            colored_class_image = utils.color_class_image(class_image, args.model)
+            # colored_class_image is [0.0-1.0] img is [0-255]
+            alpha_blended = 0.5 * colored_class_image + 0.5 * img
 
-        class_image = np.argmax(class_scores, axis=2)
-        pm = np.max(class_scores, axis=2)
-        colored_class_image = utils.color_class_image(class_image, args.model)
-        # colored_class_image is [0.0-1.0] img is [0-255]
-        alpha_blended = 0.5 * colored_class_image + 0.5 * img
-        filename, ext = splitext(args.output_path)
-        misc.imsave(filename + "_seg" + ext, colored_class_image)
-        misc.imsave(filename + "_probs" + ext, pm)
-        misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
+            print("Write result...")
+            if args.glob_path:
+                input_filename, ext = splitext(basename(img_path))
+                filename = join(args.output_path, input_filename)
+            else:
+                filename, ext = splitext(args.output_path)
+
+            misc.imsave(filename + "_seg" + ext, colored_class_image)
+            misc.imsave(filename + "_probs" + ext, pm)
+            misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
