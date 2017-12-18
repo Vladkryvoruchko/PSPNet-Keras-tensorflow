@@ -23,7 +23,7 @@ class PSPNet(object):
         self.input_shape = input_shape
         json_path = join("weights", "keras", weights + ".json")
         h5_path = join("weights", "keras", weights + ".h5")
-        if 'pspnet' in  weights:
+        if 'pspnet' in weights:
             if os.path.isfile(json_path) and os.path.isfile(h5_path):
                 print("Keras model & weights found, loading...")
                 with open(json_path, 'r') as file_handle:
@@ -32,8 +32,8 @@ class PSPNet(object):
             else:
                 print("No Keras model & weights found, import from npy weights.")
                 self.model = layers.build_pspnet(nb_classes=nb_classes,
-                                             resnet_layers=resnet_layers,
-                                             input_shape=self.input_shape)
+                                                 resnet_layers=resnet_layers,
+                                                 input_shape=self.input_shape)
                 self.set_npy_weights(weights)
         else:
             print('Load pre-trained weights')
@@ -58,7 +58,7 @@ class PSPNet(object):
 
         probs = self.feed_forward(img)
         h, w = probs.shape[:2]
-        probs = ndimage.zoom(probs, (1.*h_ori/h, 1.*w_ori/w, 1.),
+        probs = ndimage.zoom(probs, (1. * h_ori / h, 1. * w_ori / w, 1.),
                              order=1, prefilter=False)
         print("Finished prediction...")
 
@@ -92,7 +92,7 @@ class PSPNet(object):
                 offset = weights[layer.name]['offset'].reshape(-1)
 
                 self.model.get_layer(layer.name).set_weights([mean, variance,
-                                                             scale, offset])
+                                                              scale, offset])
 
             elif layer.name[:4] == 'conv' and not layer.name[-4:] == 'relu':
                 try:
@@ -101,7 +101,7 @@ class PSPNet(object):
                 except Exception as err:
                     biases = weights[layer.name]['biases']
                     self.model.get_layer(layer.name).set_weights([weight,
-                                                                 biases])
+                                                                  biases])
         print('Finished importing weights.')
 
         print("Writing keras model & weights")
@@ -130,7 +130,7 @@ class PSPNet101(PSPNet):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--model', type=str, default='pspnet50_ade20k',
+    parser.add_argument('-m', '--model', type=str, default='pspnet101_voc2012',
                         help='Model/Weights to use',
                         choices=['pspnet50_ade20k',
                                  'pspnet101_cityscapes',
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument('--input_size', type=int, default=500)
     parser.add_argument('-f', '--flip', type=bool, default=False,
                         help="Whether the network should predict on both image and flipped image.")
-    
+
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.id
@@ -160,25 +160,26 @@ if __name__ == "__main__":
         if not args.weights:
             if "pspnet50" in args.model:
                 pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473),
-                              weights=args.model)
+                                  weights=args.model)
             elif "pspnet101" in args.model:
                 if "cityscapes" in args.model:
                     pspnet = PSPNet101(nb_classes=19, input_shape=(713, 713),
-                                   weights=args.model)
+                                       weights=args.model)
                 if "voc2012" in args.model:
                     pspnet = PSPNet101(nb_classes=21, input_shape=(473, 473),
-                                   weights=args.model)
+                                       weights=args.model)
 
             else:
                 print("Network architecture not implemented.")
         else:
-            pspnet = PSPNet50(nb_classes=2, input_shape=(640, 480), weights=args.weights)
+            pspnet = PSPNet50(nb_classes=2, input_shape=(
+                768, 480), weights=args.weights)
         probs = pspnet.predict(img, args.flip)
         print("Writing results...")
         #import ipdb; ipdb.set_trace()
         cm = np.argmax(probs, axis=2)
         pm = np.max(probs, axis=2)
-      
+
         color_cm = utils.add_color(cm)
         # color cm is [0.0-1.0] img is [0-255]
         alpha_blended = 0.5 * color_cm * 255 + 0.5 * img
