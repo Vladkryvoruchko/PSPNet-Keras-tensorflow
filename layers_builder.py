@@ -183,16 +183,28 @@ def ResNet(inp, layers):
     return res
 
 
-def interp_block(prev_layer, level, feature_map_shape, str_lvl=1, ):
-    str_lvl = str(str_lvl)
+def interp_block(prev_layer, level, feature_map_shape, input_shape):
+    if input_shape == (473, 473):
+        kernel_strides_map = {1: 60,
+                              2: 30,
+                              3: 20,
+                              6: 10}
+    elif input_shape == (713, 713):
+        kernel_strides_map = {1: 90,
+                              2: 45,
+                              3: 30,
+                              6: 15}
+    else:
+        print("Pooling parameters for input shape ",
+              input_shape, " are not defined.")
+        exit(1)
 
     names = [
-        "conv5_3_pool" + str_lvl + "_conv",
-        "conv5_3_pool" + str_lvl + "_conv_bn"
+        "conv5_3_pool" + str(level) + "_conv",
+        "conv5_3_pool" + str(level) + "_conv_bn"
     ]
-
-    kernel = (10 * level, 10 * level)
-    strides = (10 * level, 10 * level)
+    kernel = (kernel_strides_map[level], kernel_strides_map[level])
+    strides = (kernel_strides_map[level], kernel_strides_map[level])
     prev_layer = AveragePooling2D(kernel, strides=strides)(prev_layer)
     prev_layer = Conv2D(512, (1, 1), strides=(1, 1), name=names[0],
                         use_bias=False)(prev_layer)
@@ -212,10 +224,10 @@ def build_pyramid_pooling_module(res, input_shape):
     print("PSP module will interpolate to a final feature map size of %s" %
           (feature_map_size, ))
 
-    interp_block1 = interp_block(res, 6, feature_map_size, str_lvl=1)
-    interp_block2 = interp_block(res, 3, feature_map_size, str_lvl=2)
-    interp_block3 = interp_block(res, 2, feature_map_size, str_lvl=3)
-    interp_block6 = interp_block(res, 1, feature_map_size, str_lvl=6)
+    interp_block1 = interp_block(res, 1, feature_map_size, input_shape)
+    interp_block2 = interp_block(res, 2, feature_map_size, input_shape)
+    interp_block3 = interp_block(res, 3, feature_map_size, input_shape)
+    interp_block6 = interp_block(res, 6, feature_map_size, input_shape)
 
     # concat all these layers. resulted
     # shape=(1,feature_map_size_x,feature_map_size_y,4096)
