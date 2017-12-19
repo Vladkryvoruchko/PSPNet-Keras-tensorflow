@@ -36,10 +36,10 @@ for k, v in net.params.items():
         weights[k] = {"weights": W, "biases": b}
     elif len(v) == 4:  # Batchnorm layer
         k = k.replace('/', '_')
-        mean = v[0].data[...]
-        variance = v[1].data[...]
-        scale = v[2].data[...]
-        offset = v[3].data[...]
+        scale = v[0].data[...]
+        offset = v[1].data[...]
+        mean = v[2].data[...]
+        variance = v[3].data[...]
         weights[k] = {"mean": mean, "variance": variance, "scale": scale, "offset": offset}
     else:
         print("Undefined layer")
