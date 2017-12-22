@@ -102,9 +102,7 @@ class PSPNet(object):
                 variance = weights[layer.name]['variance'].reshape(-1)
                 scale = weights[layer.name]['scale'].reshape(-1)
                 offset = weights[layer.name]['offset'].reshape(-1)
-
-                self.model.get_layer(layer.name).set_weights([mean, variance,
-                                                             scale, offset])
+                self.model.get_layer(layer.name).set_weights([scale, offset, mean, variance])
                 weights_set += 1
             elif layer.name[:4] == 'conv' and not layer.name[-4:] == 'relu':
                 try:
