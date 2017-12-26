@@ -18,9 +18,11 @@ Weights(in ```.npy``` format) have to be downloaded and placed into directory ``
 
 Already converted weights can be downloaded here:
 
-[pspnet50_ade20k.npy](https://www.dropbox.com/s/ms8afun494dlh1t/pspnet50_ade20k.npy?dl=0)
-[pspnet101_cityscapes.npy](https://www.dropbox.com/s/b21j6hi6qql90l0/pspnet101_cityscapes.npy?dl=0)
-[pspnet101_voc2012.npy](https://www.dropbox.com/s/xkjmghsbn6sfj9k/pspnet101_voc2012.npy?dl=0) 
+[pspnet50_ade20k.npy](https://www.dropbox.com/s/slzgd07ijcyl45b/pspnet50_ade20k.npy?dl=0)
+[pspnet101_cityscapes.npy](https://www.dropbox.com/s/oimz7wrgqhfmkk9/pspnet101_cityscapes.npy?dl=0)
+[pspnet101_voc2012.npy](https://www.dropbox.com/s/ht3qup5r1nourbg/pspnet101_voc2012.npy?dl=0)
+
+Important: These weights have been updated with respect to issue #31 & PR #32. Please delete all numpy and keras weights and redownload these numpy weights.
 
 Weights are **automatically** converted to the ```json/h5``` format on **first start**
 
