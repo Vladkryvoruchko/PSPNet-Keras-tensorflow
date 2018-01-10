@@ -13,7 +13,7 @@ Implemented Architecture of Pyramid Scene Parsing Network in Keras.
     pip install -r requirements.txt --upgrade
     ```
 2. Converted trained weights are needed to run the network.
-Weights(in ```.npy``` format) have to be downloaded and placed into directory ``` weights/npy ```
+Weights(in ```.h5 .json``` format) have to be downloaded and placed into directory ``` weights/keras ```
 
 
 Already converted weights can be downloaded here:
