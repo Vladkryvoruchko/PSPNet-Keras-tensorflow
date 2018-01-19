@@ -37,7 +37,7 @@ def color_class_image(class_image, model_name):
 def add_color(img, num_classes=32):
     h, w = img.shape
     img_color = np.zeros((h, w, 3))
-    for i in xrange(1, 151):
+    for i in range(1, 151):
         img_color[img == i] = to_color(i)
     img_color[img == num_classes] = (1.0, 1.0, 1.0)
     return img_color

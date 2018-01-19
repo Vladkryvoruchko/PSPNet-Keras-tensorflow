@@ -20,11 +20,13 @@ def rot90(W):
 
 
 weights = {}
-assert "prototxt" in splitext(sys.argv[1])[1], "First argument must be caffe prototxt %s" % sys.argv[1]
-assert "caffemodel" in splitext(sys.argv[2])[1], "Second argument must be caffe weights %s" % sys.argv[2]
+assert "prototxt" in splitext(
+    sys.argv[1])[1], "First argument must be caffe prototxt %s" % sys.argv[1]
+assert "caffemodel" in splitext(
+    sys.argv[2])[1], "Second argument must be caffe weights %s" % sys.argv[2]
 net = caffe.Net(sys.argv[1], sys.argv[2], caffe.TEST)
 for k, v in net.params.items():
-    print ("Layer %s, has %d params." % (k, len(v)))
+    print("Layer %s, has %d params." % (k, len(v)))
     if len(v) == 1:
         W = v[0].data[...]
         W = np.transpose(W, (2, 3, 1, 0))
@@ -36,15 +38,16 @@ for k, v in net.params.items():
         weights[k] = {"weights": W, "biases": b}
     elif len(v) == 4:  # Batchnorm layer
         k = k.replace('/', '_')
-        mean = v[0].data[...]
-        variance = v[1].data[...]
-        scale = v[2].data[...]
-        offset = v[3].data[...]
-        weights[k] = {"mean": mean, "variance": variance, "scale": scale, "offset": offset}
+        scale = v[0].data[...]
+        offset = v[1].data[...]
+        mean = v[2].data[...]
+        variance = v[3].data[...]
+        weights[k] = {"mean": mean, "variance": variance,
+                      "scale": scale, "offset": offset}
     else:
         print("Undefined layer")
         exit()
 
 arr = np.asarray(weights)
-weights_name = splitext(sys.argv[2])[0]+".npy"
+weights_name = splitext(sys.argv[2])[0] + ".npy"
 np.save(weights_name.lower(), arr)

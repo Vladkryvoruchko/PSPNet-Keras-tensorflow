@@ -11,6 +11,7 @@ import tensorflow as tf
 import layers_builder as layers
 from python_utils import utils
 from python_utils.preprocessing import preprocess_img
+from keras.utils.generic_utils import CustomObjectScope
 
 # These are the means for the ImageNet pretrained ResNet
 DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]])  # RGB order
@@ -26,8 +27,9 @@ class PSPNet(object):
         if 'pspnet' in weights:
             if os.path.isfile(json_path) and os.path.isfile(h5_path):
                 print("Keras model & weights found, loading...")
-                with open(json_path, 'r') as file_handle:
-                    self.model = model_from_json(file_handle.read())
+                with CustomObjectScope({'Interp': layers.Interp}):
+                    with open(json_path, 'r') as file_handle:
+                        self.model = model_from_json(file_handle.read())
                 self.model.load_weights(h5_path)
             else:
                 print("No Keras model & weights found, import from npy weights.")
@@ -81,25 +83,28 @@ class PSPNet(object):
         h5_path = join("weights", "keras", weights_path + ".h5")
 
         print("Importing weights from %s" % npy_weights_path)
-        weights = np.load(npy_weights_path).item()
-
+        weights = np.load(npy_weights_path, encoding='bytes').item()
         for layer in self.model.layers:
             print(layer.name)
             if layer.name[:4] == 'conv' and layer.name[-2:] == 'bn':
-                mean = weights[layer.name]['mean'].reshape(-1)
-                variance = weights[layer.name]['variance'].reshape(-1)
-                scale = weights[layer.name]['scale'].reshape(-1)
-                offset = weights[layer.name]['offset'].reshape(-1)
+                mean = weights[layer.name.encode()][
+                    'mean'.encode()].reshape(-1)
+                variance = weights[layer.name.encode()][
+                    'variance'.encode()].reshape(-1)
+                scale = weights[layer.name.encode()][
+                    'scale'.encode()].reshape(-1)
+                offset = weights[layer.name.encode()][
+                    'offset'.encode()].reshape(-1)
 
-                self.model.get_layer(layer.name).set_weights([mean, variance,
-                                                              scale, offset])
+                self.model.get_layer(layer.name).set_weights(
+                    [scale, offset, mean, variance])
 
             elif layer.name[:4] == 'conv' and not layer.name[-4:] == 'relu':
                 try:
-                    weight = weights[layer.name]['weights']
+                    weight = weights[layer.name.encode()]['weights'.encode()]
                     self.model.get_layer(layer.name).set_weights([weight])
                 except Exception as err:
-                    biases = weights[layer.name]['biases']
+                    biases = weights[layer.name.encode()]['biases'.encode()]
                     self.model.get_layer(layer.name).set_weights([weight,
                                                                   biases])
         print('Finished importing weights.')
@@ -156,7 +161,6 @@ if __name__ == "__main__":
         img = misc.imread(args.input_path, mode='RGB')
         cimg = misc.imresize(img, (args.input_size, args.input_size))
         print(args)
-        #import ipdb; ipdb.set_trace()
         if not args.weights:
             if "pspnet50" in args.model:
                 pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473),
@@ -174,9 +178,10 @@ if __name__ == "__main__":
         else:
             pspnet = PSPNet50(nb_classes=2, input_shape=(
                 768, 480), weights=args.weights)
-        probs = pspnet.predict(img, args.flip)
+
+        probs = pspnet.predict(cimg, args.flip)
         print("Writing results...")
-        #import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         cm = np.argmax(probs, axis=2)
         pm = np.max(probs, axis=2)
 
