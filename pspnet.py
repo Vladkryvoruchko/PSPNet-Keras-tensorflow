@@ -72,10 +72,22 @@ class PSPNet(object):
 
         # utils.debug(self.model, data)
         pred = self.model.predict(data)[0]
+
         if flip_evaluation:
-            flipped = np.fliplr(self.model.predict(np.flip(data, axis=2))[0])
-            pred = (pred + flipped) / 2.0
-        return pred
+            print("Predict flipped")
+            input_with_flipped = np.array(
+                [input_data, np.flip(input_data, axis=1)])
+            prediction_with_flipped = self.model.predict(input_with_flipped)
+            prediction = (prediction_with_flipped[
+                          0] + np.fliplr(prediction_with_flipped[1])) / 2.0
+        else:
+            prediction = self.model.predict(np.expand_dims(input_data, 0))[0]
+
+        if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
+            h, w = prediction.shape[:2]
+            prediction = ndimage.zoom(prediction, (1. * h_ori / h, 1. * w_ori / w, 1.),
+                                      order=1, prefilter=False)
+        return prediction
 
     def set_npy_weights(self, weights_path):
         npy_weights_path = join("weights", "npy", weights_path + ".npy")
