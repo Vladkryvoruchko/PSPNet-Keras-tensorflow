@@ -42,8 +42,10 @@ for k, v in net.params.items():
         offset = v[1].data[...]
         mean = v[2].data[...]
         variance = v[3].data[...]
+
         weights[k] = {"mean": mean, "variance": variance,
                       "scale": scale, "offset": offset}
+
     else:
         print("Undefined layer")
         exit()
