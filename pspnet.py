@@ -54,39 +54,38 @@ class PSPNet(object):
         img = misc.imresize(img, self.input_shape)
 
         img = img - DATA_MEAN
+        #img /= 255.0
         img = img[:, :, ::-1]  # RGB => BGR
         img = img.astype('float32')
         print("Predicting...")
 
-        probs = self.feed_forward(img)
-        h, w = probs.shape[:2]
-        probs = ndimage.zoom(probs, (1. * h_ori / h, 1. * w_ori / w, 1.),
-                             order=1, prefilter=False)
+        probs = self.feed_forward(img, flip_evaluation)
+
+        if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
+            h, w = probs.shape[:2]
+            probs = ndimage.zoom(probs, (1. * h_ori / h, 1. * w_ori / w, 1.),
+                                 order=1, prefilter=False)
+
         print("Finished prediction...")
 
         return probs
 
     def feed_forward(self, data, flip_evaluation=False):
         assert data.shape == (self.input_shape[0], self.input_shape[1], 3)
-        data = data[np.newaxis, :, :, :]
+        #data = data[np.newaxis, :, :, :]
 
         # utils.debug(self.model, data)
-        pred = self.model.predict(data)[0]
+        #pred = self.model.predict(data)[0]
 
         if flip_evaluation:
             print("Predict flipped")
             input_with_flipped = np.array(
-                [input_data, np.flip(input_data, axis=1)])
+                [data, np.flip(data, axis=1)])
             prediction_with_flipped = self.model.predict(input_with_flipped)
             prediction = (prediction_with_flipped[
                           0] + np.fliplr(prediction_with_flipped[1])) / 2.0
         else:
-            prediction = self.model.predict(np.expand_dims(input_data, 0))[0]
-
-        if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
-            h, w = prediction.shape[:2]
-            prediction = ndimage.zoom(prediction, (1. * h_ori / h, 1. * w_ori / w, 1.),
-                                      order=1, prefilter=False)
+            prediction = self.model.predict(np.expand_dims(data, 0))[0]
         return prediction
 
     def set_npy_weights(self, weights_path):
@@ -159,7 +158,7 @@ if __name__ == "__main__":
                         help='Path to output')
     parser.add_argument('--id', default="0")
     parser.add_argument('--input_size', type=int, default=500)
-    parser.add_argument('-f', '--flip', type=bool, default=False,
+    parser.add_argument('-f', '--flip', type=bool, default=True,
                         help="Whether the network should predict on both image and flipped image.")
 
     args = parser.parse_args()
@@ -191,7 +190,8 @@ if __name__ == "__main__":
             pspnet = PSPNet50(nb_classes=2, input_shape=(
                 768, 480), weights=args.weights)
 
-        probs = pspnet.predict(cimg, args.flip)
+        probs = pspnet.predict(img, args.flip)
+        pspnet.model.save('model.h5')
         print("Writing results...")
         # import ipdb; ipdb.set_trace()
         cm = np.argmax(probs, axis=2)
