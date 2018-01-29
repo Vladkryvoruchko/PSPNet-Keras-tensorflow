@@ -54,7 +54,6 @@ class PSPNet(object):
         img = misc.imresize(img, self.input_shape)
 
         img = img - DATA_MEAN
-        #img /= 255.0
         img = img[:, :, ::-1]  # RGB => BGR
         img = img.astype('float32')
         print("Predicting...")
@@ -72,10 +71,6 @@ class PSPNet(object):
 
     def feed_forward(self, data, flip_evaluation=False):
         assert data.shape == (self.input_shape[0], self.input_shape[1], 3)
-        #data = data[np.newaxis, :, :, :]
-
-        # utils.debug(self.model, data)
-        #pred = self.model.predict(data)[0]
 
         if flip_evaluation:
             print("Predict flipped")
@@ -191,9 +186,8 @@ if __name__ == "__main__":
                 768, 480), weights=args.weights)
 
         probs = pspnet.predict(img, args.flip)
-        pspnet.model.save('model.h5')
+
         print("Writing results...")
-        # import ipdb; ipdb.set_trace()
         cm = np.argmax(probs, axis=2)
         pm = np.max(probs, axis=2)
 
