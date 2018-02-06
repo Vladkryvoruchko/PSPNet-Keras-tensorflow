@@ -5,3 +5,4 @@
 *.prototxt
 *.h5
 *.json
+output/
