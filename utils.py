@@ -10,6 +10,18 @@ from pascal_voc_labels import voc_id2label
 def class_image_to_image(class_id_image, class_id_to_rgb_map):
     """Map the class image to a rgb-color image."""
     colored_image = np.zeros((class_id_image.shape[0], class_id_image.shape[1], 3), np.uint8)
+    for i in range(-1,256):
+        try:
+            cl = class_id_to_rgb_map[i]
+            colored_image[class_id_image[:,:]==i] = cl.color
+        except KeyError as key_error:
+            pass
+    return colored_image
+
+
+def class_image_to_image_slow(class_id_image, class_id_to_rgb_map):
+    """Map the class image to a rgb-color image."""
+    colored_image = np.zeros((class_id_image.shape[0], class_id_image.shape[1], 3), np.uint8)
     for row in range(class_id_image.shape[0]):
         for col in range(class_id_image.shape[1]):
             try:
@@ -27,6 +39,18 @@ def color_class_image(class_image, model_name):
         colored_image = class_image_to_image(class_image, voc_id2label)
     elif 'ade20k' in model_name:
         colored_image = class_image_to_image(class_image, ade20k_id2label)
+    else:
+        colored_image = add_color(class_image)
+    return colored_image
+
+def color_class_image_slow(class_image, model_name):
+    """Color classed depending on the model used."""
+    if 'cityscapes' in model_name:
+        colored_image = class_image_to_image_slow(class_image, trainId2label)
+    elif 'voc' in model_name:
+        colored_image = class_image_to_image_slow(class_image, voc_id2label)
+    elif 'ade20k' in model_name:
+        colored_image = class_image_to_image_slow(class_image, ade20k_id2label)
     else:
         colored_image = add_color(class_image)
     return colored_image

@@ -19,6 +19,7 @@ import layers_builder as layers
 import utils
 import matplotlib.pyplot as plt
 import cv2
+import datetime
 from tensorflow.python.client import device_lib
 
 __author__ = "Vlad Kryvoruchko, Chaoyue Wang, Jeffrey Hu & Julian Tatsch"
@@ -70,7 +71,7 @@ class PSPNet(object):
         """
         h_ori, w_ori = img.shape[:2]
         if img.shape[0:2] != self.input_shape:
-            print("Input %s not fitting for network size %s, resizing. You may want to try sliding prediction for better results." % (img.shape[0:2], self.input_shape))
+            # print("Input %s not fitting for network size %s, resizing. You may want to try sliding prediction for better results." % (img.shape[0:2], self.input_shape))
             img = misc.imresize(img, self.input_shape)
         input_data = self.preprocess_image(img)
         # utils.debug(self.model, input_data)
@@ -85,8 +86,7 @@ class PSPNet(object):
 
         if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
             h, w = prediction.shape[:2]
-            # prediction = ndimage.zoom(prediction, (1.*h_ori/h, 1.*w_ori/w, 1.),
-                                    # order=1, prefilter=False)
+            # prediction = ndimage.zoom(prediction, (1.*h_ori/h, 1.*w_ori/w, 1.), order=1, prefilter=False)
             prediction = cv2.resize(prediction,(w_ori,h_ori))
         return prediction
 
@@ -237,8 +237,7 @@ def predict_multi_scale(full_image, net, scales, sliding_evaluation, flip_evalua
             scaled_probs = net.predict(scaled_img, flip_evaluation)
         # scale probs up to full size
         h, w = scaled_probs.shape[:2]
-        probs = ndimage.zoom(scaled_probs, (1.*h_ori/h, 1.*w_ori/w, 1.),
-                             order=1, prefilter=False)
+        probs = ndimage.zoom(scaled_probs, (1.*h_ori/h, 1.*w_ori/w, 1.),order=1, prefilter=False)
         # visualize_prediction(probs)
         # integrate probs over all scales
         full_probs += probs
@@ -271,7 +270,7 @@ if __name__ == "__main__":
                         help='Path the input image')
     parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
                         help='Path to output')
-    parser.add_argument('--id', default="0")
+    parser.add_argument('--id', default="1")
     parser.add_argument('-s', '--sliding', action='store_true',
                         help="Whether the network should be slided over the original image for prediction.")
     parser.add_argument('-f', '--flip', action='store_true',
@@ -280,14 +279,15 @@ if __name__ == "__main__":
                         help="Whether the network should predict on multiple scales.")
     args = parser.parse_args()
 
-    environ["CUDA_VISIBLE_DEVICES"] = args.id
+    # environ["CUDA_VISIBLE_DEVICES"] = args.id
 
     sess = tf.Session()
     K.set_session(sess)
 
     with sess.as_default():
-        img = cv2.imread(args.input_path)
-        print(args.input_path)
+        cap = cv2.VideoCapture(args.input_path)
+        print(args)
+        counter = 0
 
         if "pspnet50" in args.model:
             pspnet = PSPNet50(nb_classes=150, input_shape=(473, 473),
@@ -307,19 +307,45 @@ if __name__ == "__main__":
             EVALUATION_SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]  # must be all floats!
             EVALUATION_SCALES = [0.15, 0.25, 0.5]  # must be all floats!
 
-        img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        time_sum = 0
+        while(True):
+            # Capture frame-by-frame
+            ret, img = cap.read()
+            if img is None:
+                break
 
-        # class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
-        class_scores = _predict(img, pspnet, args.flip)
 
-        print("Writing results...")
+            # img = cv2.resize(img,(int(16.0*713/9.0),713))
+            img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
 
-        class_image = np.argmax(class_scores, axis=2)
-        pm = np.max(class_scores, axis=2)
-        colored_class_image = utils.color_class_image(class_image, args.model)
+            start = datetime.datetime.now()
+            # class_scores = predict_multi_scale(img, pspnet, EVALUATION_SCALES, args.sliding, args.flip)
+            class_scores = _predict(img, pspnet, args.flip)
 
-        alpha_blended = 0.5 * colored_class_image + 0.5 * img
-        filename, ext = splitext(args.output_path)
-        misc.imsave(filename + "_seg" + ext, colored_class_image)
-        misc.imsave(filename + "_probs" + ext, pm)
-        misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
+            # End time
+            end = datetime.datetime.now()
+
+            # Time elapsed
+            diff = end - start
+
+            class_image = np.argmax(class_scores, axis=2)
+            pm = np.max(class_scores, axis=2)
+            colored_class_image = utils.color_class_image(class_image, args.model)
+
+            alpha_blended = 0.5 * colored_class_image + 0.5 * img
+            filename, ext = splitext(args.output_path)
+
+            time_sum += diff.microseconds/1000.0
+            print(counter,diff.microseconds/1000.0,'ms')
+
+
+            cv2.putText(alpha_blended,'%s %s'%(GPU_NAME,args.model),(100,100), cv2.FONT_HERSHEY_SIMPLEX, 3,(0,0,0),16,cv2.LINE_AA)
+            cv2.putText(alpha_blended,'%s %s'%(GPU_NAME,args.model),(100,100), cv2.FONT_HERSHEY_SIMPLEX, 3,(255,255,255),10,cv2.LINE_AA)
+
+            cv2.putText(alpha_blended,'Prediction time: %.0fms (%.1f fps) AVG: %.0fms (%.1f fps)'%(diff.microseconds/1000.0,1000000.0/diff.microseconds,time_sum/(counter+1),1000.0/(time_sum/(counter+1))),(100,200), cv2.FONT_HERSHEY_SIMPLEX, 3,(0,0,0),16,cv2.LINE_AA)
+            cv2.putText(alpha_blended,'Prediction time: %.0fms (%.1f fps) AVG: %.0fms (%.1f fps)'%(diff.microseconds/1000.0,1000000.0/diff.microseconds,time_sum/(counter+1),1000.0/(time_sum/(counter+1))),(100,200), cv2.FONT_HERSHEY_SIMPLEX, 3,(255,255,255),10,cv2.LINE_AA)
+
+            misc.imsave(filename + "_%08d_seg"%counter + ext, colored_class_image)
+            misc.imsave(filename + "_%08d_probs"%counter + ext, pm)
+            misc.imsave(filename + "_%08d_seg_blended"%counter + ext, alpha_blended)
+            counter = counter + 1
