@@ -198,7 +198,7 @@ if __name__ == "__main__":
 
         for i, img_path in enumerate(images):
             print("Processing image {} / {}".format(i+1,len(images)))
-            img = misc.imread(args.input_path, mode='RGB')
+            img = misc.imread(img_path, mode='RGB')
             cimg = misc.imresize(img, (args.input_size, args.input_size))
 
             probs = pspnet.predict(img, args.flip)
