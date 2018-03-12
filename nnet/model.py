@@ -1,8 +1,8 @@
 from __future__ import print_function
 from math import ceil
 from keras import layers
-from keras.layers import Conv2D, MaxPooling2D, AveragePooling2D, GlobalAveragePooling2D
-from keras.layers import BatchNormalization, Activation, Input, Dropout, ZeroPadding2D, Lambda
+from keras.layers import Conv2D, MaxPooling2D, AveragePooling2D
+from keras.layers import BatchNormalization, Activation, Input, Dropout, ZeroPadding2D
 from keras.layers.merge import Concatenate, Add
 from keras.models import Model
 from keras.optimizers import SGD
@@ -158,19 +158,19 @@ def ResNet(inp, layers):
     return res
 
 
-def interp_block(prev_layer, level, output_size):
+def interp_block(prev_block, level):
     names = [
         "conv5_3_pool" + str(level) + "_conv",
         "conv5_3_pool" + str(level) + "_conv_bn"
     ]
 
-    prev_layer = AdaptivePooling2D(level, mode='avg')(prev_layer)
+    prev_layer = AdaptivePooling2D(level, mode='avg')(prev_block)
     prev_layer = Conv2D(512, (1, 1), strides=(1, 1), name=names[0],
                         use_bias=False)(prev_layer)
     prev_layer = BN(name=names[1])(prev_layer)
     prev_layer = Activation('relu')(prev_layer)
 
-    prev_layer = Interp(output_size)(prev_layer)
+    prev_layer = Interp()([prev_layer, prev_block])
     return prev_layer
 
 
@@ -178,16 +178,14 @@ def build_pyramid_pooling_module(res):
     """Build the Pyramid Pooling Module."""
     # ---PSPNet concat layers with Interpolation
 
-    shape = ktf.shape(res)
-    output_size = (shape[1], shape[2])
-    interp_block1 = interp_block(res, 1, output_size)
-    interp_block2 = interp_block(res, 2, output_size)
-    interp_block3 = interp_block(res, 3, output_size)
-    interp_block6 = interp_block(res, 6, output_size)
+    interp_block1 = interp_block(res, 1)
+    interp_block2 = interp_block(res, 2)
+    interp_block3 = interp_block(res, 3)
+    interp_block6 = interp_block(res, 6)
 
     # concat all these layers. resulted
     # shape=(1,feature_map_size_x,feature_map_size_y,4096)
-    first = Interp(output_size)(res)
+    first = Interp()([res, res])  # needed because didn't work concatenate
 
     res = Concatenate()([first,
                          interp_block6,
@@ -203,7 +201,6 @@ def build_pspnet(nb_classes, resnet_layers, input_shape, activation='softmax'):
         resnet_layers, input_shape, nb_classes))
 
     inp = Input((None, None, 3))
-    input_shape = ktf.shape(inp)
     res = ResNet(inp, layers=resnet_layers)
 
     psp = build_pyramid_pooling_module(res)
@@ -216,7 +213,7 @@ def build_pspnet(nb_classes, resnet_layers, input_shape, activation='softmax'):
 
     x = Conv2D(nb_classes, (1, 1), strides=(1, 1), name="conv6")(x)
 
-    x = Interp([input_shape[1], input_shape[2]])(x)
+    x = Interp()([x, inp])
     x = Activation(activation)(x)
 
     model = Model(inputs=inp, outputs=x)
