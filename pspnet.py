@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
-from os.path import splitext, join
+from os.path import splitext, join, isfile, isdir, basename
 import argparse
 import numpy as np
 from scipy import misc, ndimage
@@ -9,6 +9,7 @@ from keras import backend as K
 from keras.models import model_from_json, load_model
 import tensorflow as tf
 import layers_builder as layers
+from glob import glob
 from python_utils import utils
 from python_utils.preprocessing import preprocess_img
 from keras.utils.generic_utils import CustomObjectScope
@@ -149,6 +150,8 @@ if __name__ == "__main__":
     parser.add_argument('-w', '--weights', type=str, default=None)
     parser.add_argument('-i', '--input_path', type=str, default='example_images/ade20k.jpg',
                         help='Path the input image')
+    parser.add_argument('-g', '--glob_path', type=str, default=None,
+                        help='Glob path for multiple images')
     parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
                         help='Path to output')
     parser.add_argument('--id', default="0")
@@ -158,14 +161,22 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Handle input and output args
+    images = glob(args.glob_path) if args.glob_path else [args.input_path,]
+    if args.glob_path:
+        fn, ext = splitext(args.output_path)
+        if ext:
+            parser.error("output_path should be a folder for multiple file input")
+        if not isdir(args.output_path):
+            os.mkdir(args.output_path)
+
+    # Predict
     os.environ["CUDA_VISIBLE_DEVICES"] = args.id
 
     sess = tf.Session()
     K.set_session(sess)
 
     with sess.as_default():
-        img = misc.imread(args.input_path, mode='RGB')
-        cimg = misc.imresize(img, (args.input_size, args.input_size))
         print(args)
         if not args.weights:
             if "pspnet50" in args.model:
@@ -185,17 +196,27 @@ if __name__ == "__main__":
             pspnet = PSPNet50(nb_classes=2, input_shape=(
                 768, 480), weights=args.weights)
 
-        probs = pspnet.predict(img, args.flip)
+        for i, img_path in enumerate(images):
+            print("Processing image {} / {}".format(i+1,len(images)))
+            img = misc.imread(img_path, mode='RGB')
+            cimg = misc.imresize(img, (args.input_size, args.input_size))
 
-        print("Writing results...")
-        cm = np.argmax(probs, axis=2)
-        pm = np.max(probs, axis=2)
+            probs = pspnet.predict(img, args.flip)
 
-        color_cm = utils.add_color(cm)
-        # color cm is [0.0-1.0] img is [0-255]
-        alpha_blended = 0.5 * color_cm * 255 + 0.5 * img
-        filename, ext = splitext(args.output_path)
-        misc.imsave(filename + "_seg_read" + ext, cm)
-        misc.imsave(filename + "_seg" + ext, color_cm)
-        misc.imsave(filename + "_probs" + ext, pm)
-        misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
+            cm = np.argmax(probs, axis=2)
+            pm = np.max(probs, axis=2)
+
+            color_cm = utils.add_color(cm)
+            # color cm is [0.0-1.0] img is [0-255]
+            alpha_blended = 0.5 * color_cm * 255 + 0.5 * img
+
+            if args.glob_path:
+                input_filename, ext = splitext(basename(img_path))
+                filename = join(args.output_path, input_filename)
+            else:
+                filename, ext = splitext(args.output_path)
+
+            misc.imsave(filename + "_seg_read" + ext, cm)
+            misc.imsave(filename + "_seg" + ext, color_cm)
+            misc.imsave(filename + "_probs" + ext, pm)
+            misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
