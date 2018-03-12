@@ -6,9 +6,10 @@ import argparse
 import numpy as np
 from scipy import misc, ndimage
 from keras import backend as K
-from keras.models import model_from_json, load_model
+from keras.models import model_from_json, load_model, Model
 import tensorflow as tf
-import layers_builder as layers
+from nnet.model import build_pspnet
+from nnet.keras_layers import Interp, AdaptivePooling2D
 from python_utils import utils
 from python_utils.preprocessing import preprocess_img
 from keras.utils.generic_utils import CustomObjectScope
@@ -27,15 +28,15 @@ class PSPNet(object):
         if 'pspnet' in weights:
             if os.path.isfile(json_path) and os.path.isfile(h5_path):
                 print("Keras model & weights found, loading...")
-                with CustomObjectScope({'Interp': layers.Interp}):
+                with CustomObjectScope({'Interp': Interp, 'AdaptivePooling2D': AdaptivePooling2D}):
                     with open(json_path, 'r') as file_handle:
                         self.model = model_from_json(file_handle.read())
                 self.model.load_weights(h5_path)
             else:
                 print("No Keras model & weights found, import from npy weights.")
-                self.model = layers.build_pspnet(nb_classes=nb_classes,
-                                                 resnet_layers=resnet_layers,
-                                                 input_shape=self.input_shape)
+                self.model = build_pspnet(nb_classes=nb_classes,
+                                          resnet_layers=resnet_layers,
+                                          input_shape=self.input_shape)
                 self.set_npy_weights(weights)
         else:
             print('Load pre-trained weights')

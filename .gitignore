@@ -5,4 +5,6 @@
 *.prototxt
 *.h5
 *.json
+*.jpg
+*.log
 output/
