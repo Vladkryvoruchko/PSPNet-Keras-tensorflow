@@ -25,6 +25,8 @@ Already converted weights can be downloaded here:
  * [pspnet101_voc2012.h5](https://www.dropbox.com/s/uvqj2cjo4b9c5wg/pspnet101_voc2012.h5?dl=1)
 [pspnet101_voc2012.json](https://www.dropbox.com/s/rr5taqu19f5fuzy/pspnet101_voc2012.json?dl=1)
 
+## Conver Model by yourself(optional)
+(Note: this is **not** required if you use .h5/.json models)
 Running this needs the compiled original PSPNet caffe code and pycaffe.
 
 ```bash
