@@ -2,6 +2,7 @@
 
 Implemented Architecture of Pyramid Scene Parsing Network in Keras.
 
+For the best compability please use Python3.5
 ### Setup
 1. Install dependencies:
     * Tensorflow (-gpu)
