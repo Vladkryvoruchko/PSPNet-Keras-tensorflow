@@ -45,14 +45,15 @@ class PSPNet(object):
     def predict(self, img, flip_evaluation=False):
         """
         Predict segementation for an image.
-
         Arguments:
             img: must be rowsxcolsx3
         """
         h_ori, w_ori = img.shape[:2]
-
-        # Preprocess
-        img = misc.imresize(img, self.input_shape)
+        if img.shape[0:2] != self.input_shape:
+            print(
+                "Input %s not fitting for network size %s, resizing. You may want to try sliding prediction for better results." % (
+                img.shape[0:2], self.input_shape))
+            img = misc.imresize(img, self.input_shape)
 
         img = img - DATA_MEAN
         img = img[:, :, ::-1]  # RGB => BGR
@@ -205,9 +206,9 @@ if __name__ == "__main__":
             cm = np.argmax(probs, axis=2)
             pm = np.max(probs, axis=2)
 
-            color_cm = utils.add_color(cm)
+        class_image = np.argmax(class_scores, axis=2)
             # color cm is [0.0-1.0] img is [0-255]
-            alpha_blended = 0.5 * color_cm * 255 + 0.5 * img
+        colored_class_image = utils.color_class_image(class_image, args.model)
 
             if args.glob_path:
                 input_filename, ext = splitext(basename(img_path))
