@@ -10,7 +10,7 @@ from keras.models import model_from_json, load_model
 import tensorflow as tf
 import layers_builder as layers
 from glob import glob
-from python_utils import utils
+from utils import utils
 from keras.utils.generic_utils import CustomObjectScope
 import cv2
 import math

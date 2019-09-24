@@ -166,13 +166,3 @@ labels = [Label('wall', 0, (120, 120, 120)),
         Label('flag', 149, (92, 0, 255))]
 
 ade20k_id2label = {label.id: label for label in labels}
-
-
-def import_labels_from_mat():
-    colors = scipy.io.loadmat('utils/colorization/color150.mat')
-    object_names = scipy.io.loadmat('utils/colorization/objectName150.mat')
-    for id in range(150):
-        color = colors['colors'][id]
-        name = object_names['objectNames'][id][0][0]
-        labels.append(Label(name, id, color))
-        print("Label(\'%s\', %i, (%i, %i, %i))," % (name, id, color[0], color[1], color[2]))

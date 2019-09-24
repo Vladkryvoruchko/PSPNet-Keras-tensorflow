@@ -16,7 +16,7 @@ from keras import backend as K
 from keras.models import model_from_json
 import tensorflow as tf
 import layers_builder as layers
-import utils
+from utils import utils
 import matplotlib.pyplot as plt
 import cv2
 import datetime
