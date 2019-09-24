@@ -11,9 +11,9 @@ import tensorflow as tf
 import layers_builder as layers
 from glob import glob
 from python_utils import utils
-from python_utils.preprocessing import preprocess_img
 from keras.utils.generic_utils import CustomObjectScope
 
+from imageio import imread
 # These are the means for the ImageNet pretrained ResNet
 DATA_MEAN = np.array([[[123.68, 116.779, 103.939]]])  # RGB order
 
@@ -29,7 +29,7 @@ class PSPNet(object):
             if os.path.isfile(json_path) and os.path.isfile(h5_path):
                 print("Keras model & weights found, loading...")
                 with CustomObjectScope({'Interp': layers.Interp}):
-                    with open(json_path, 'r') as file_handle:
+                    with open(json_path) as file_handle:
                         self.model = model_from_json(file_handle.read())
                 self.model.load_weights(h5_path)
             else:
@@ -198,7 +198,7 @@ if __name__ == "__main__":
 
         for i, img_path in enumerate(images):
             print("Processing image {} / {}".format(i+1,len(images)))
-            img = misc.imread(img_path, mode='RGB')
+            img = imread(img_path, pilmode='RGB')
 
             probs = pspnet.predict(img, args.flip)
 
