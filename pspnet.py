@@ -12,6 +12,8 @@ import layers_builder as layers
 from glob import glob
 from python_utils import utils
 from keras.utils.generic_utils import CustomObjectScope
+import cv2
+import math
 
 from imageio import imread
 # These are the means for the ImageNet pretrained ResNet
@@ -23,6 +25,8 @@ class PSPNet(object):
 
     def __init__(self, nb_classes, resnet_layers, input_shape, weights):
         self.input_shape = input_shape
+        self.num_classes = nb_classes
+
         json_path = join("weights", "keras", weights + ".json")
         h5_path = join("weights", "keras", weights + ".h5")
         if 'pspnet' in weights:
@@ -45,30 +49,99 @@ class PSPNet(object):
     def predict(self, img, flip_evaluation=False):
         """
         Predict segementation for an image.
-
         Arguments:
             img: must be rowsxcolsx3
         """
-        h_ori, w_ori = img.shape[:2]
 
-        # Preprocess
-        img = misc.imresize(img, self.input_shape)
+        if img.shape[0:2] != self.input_shape:
+            print(
+                "Input %s not fitting for network size %s, resizing. You may want to try sliding prediction for better results." % (
+                img.shape[0:2], self.input_shape))
+            img = misc.imresize(img, self.input_shape)
 
         img = img - DATA_MEAN
         img = img[:, :, ::-1]  # RGB => BGR
         img = img.astype('float32')
-        print("Predicting...")
 
         probs = self.feed_forward(img, flip_evaluation)
 
-        if (h_ori, w_ori) != self.input_shape:  # upscale prediction if necessary
-            h, w = probs.shape[:2]
-            probs = ndimage.zoom(probs, (1. * h_ori / h, 1. * w_ori / w, 1.),
-                                 order=1, prefilter=False)
+        return probs
 
+    def predict_sliding(self, img, flip_evaluation):
+        """
+        Predict on tiles of exactly the network input shape.
+        This way nothing gets squeezed.
+        """
+        tile_size = self.input_shape
+        classes = self.num_classes
+        overlap = 1 / 3
+
+        stride = math.ceil(tile_size[0] * (1 - overlap))
+        tile_rows = max(int(math.ceil((img.shape[0] - tile_size[0]) / stride) + 1), 1)  # strided convolution formula
+        tile_cols = max(int(math.ceil((img.shape[1] - tile_size[1]) / stride) + 1), 1)
+        print("Need %i x %i prediction tiles @ stride %i px" % (tile_cols, tile_rows, stride))
+        full_probs = np.zeros((img.shape[0], img.shape[1], classes))
+        count_predictions = np.zeros((img.shape[0], img.shape[1], classes))
+        tile_counter = 0
+        for row in range(tile_rows):
+            for col in range(tile_cols):
+                x1 = int(col * stride)
+                y1 = int(row * stride)
+                x2 = min(x1 + tile_size[1], img.shape[1])
+                y2 = min(y1 + tile_size[0], img.shape[0])
+                x1 = max(int(x2 - tile_size[1]), 0)  # for portrait images the x1 underflows sometimes
+                y1 = max(int(y2 - tile_size[0]), 0)  # for very few rows y1 underflows
+
+                img = img[y1:y2, x1:x2]
+                padded_img = self.pad_image(img, tile_size)
+                # plt.imshow(padded_img)
+                # plt.show()
+                tile_counter += 1
+                print("Predicting tile %i" % tile_counter)
+                padded_prediction = self.predict(padded_img, flip_evaluation)
+                prediction = padded_prediction[0:img.shape[0], 0:img.shape[1], :]
+                count_predictions[y1:y2, x1:x2] += 1
+                full_probs[y1:y2, x1:x2] += prediction  # accumulate the predictions also in the overlapping regions
+
+        # average the predictions in the overlapping regions
+        full_probs /= count_predictions
+        # visualize normalization Weights
+        # plt.imshow(np.mean(count_predictions, axis=2))
+        # plt.show()
+        return full_probs
+
+    @staticmethod
+    def pad_image(img, target_size):
+        """Pad an image up to the target size."""
+        rows_missing = target_size[0] - img.shape[0]
+        cols_missing = target_size[1] - img.shape[1]
+        padded_img = np.pad(img, ((0, rows_missing), (0, cols_missing), (0, 0)), 'constant')
+        return padded_img
+
+    def predict_multi_scale(self, img, flip_evaluation, sliding_evaluation, scales):
+        """Predict an image by looking at it with different scales."""
+
+        full_probs = np.zeros((img.shape[0], img.shape[1], self.num_classes))
+        h_ori, w_ori = img.shape[:2]
+
+        print("Started prediction...")
+        for scale in scales:
+            print("Predicting image scaled by %f" % scale)
+            scaled_img = misc.imresize(img, size=scale, interp="bilinear")
+
+            if sliding_evaluation:
+                scaled_probs = self.predict_sliding(scaled_img, flip_evaluation)
+            else:
+                scaled_probs = self.predict(scaled_img, flip_evaluation)
+
+            # scale probs up to full size
+            # visualize_prediction(probs)
+            probs = cv2.resize(scaled_probs, (w_ori, h_ori))
+            full_probs += probs
+        full_probs /= len(scales)
         print("Finished prediction...")
 
-        return probs
+        return full_probs
 
     def feed_forward(self, data, flip_evaluation=False):
         assert data.shape == (self.input_shape[0], self.input_shape[1], 3)
@@ -156,8 +229,12 @@ if __name__ == "__main__":
                         help='Path to output')
     parser.add_argument('--id', default="0")
     parser.add_argument('--input_size', type=int, default=500)
-    parser.add_argument('-f', '--flip', type=bool, default=True,
+    parser.add_argument('-s', '--sliding', action='store_true',
+                        help="Whether the network should be slided over the original image for prediction.")
+    parser.add_argument('-f', '--flip', action='store_true', default=True,
                         help="Whether the network should predict on both image and flipped image.")
+    parser.add_argument('-ms', '--multi_scale', action='store_true',
+                        help="Whether the network should predict on multiple scales.")
 
     args = parser.parse_args()
 
@@ -196,18 +273,22 @@ if __name__ == "__main__":
             pspnet = PSPNet50(nb_classes=2, input_shape=(
                 768, 480), weights=args.weights)
 
+        EVALUATION_SCALES = [1.0]
+        if args.multi_scale:
+            EVALUATION_SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]  # must be all floats! Taken from original paper
+
         for i, img_path in enumerate(images):
             print("Processing image {} / {}".format(i+1,len(images)))
             img = imread(img_path, pilmode='RGB')
 
-            probs = pspnet.predict(img, args.flip)
+            #probs = pspnet.predict(img, args.flip)
+            probs = pspnet.predict_multi_scale(img, args.flip, args.sliding, EVALUATION_SCALES)
 
             cm = np.argmax(probs, axis=2)
             pm = np.max(probs, axis=2)
 
-            color_cm = utils.add_color(cm)
-            # color cm is [0.0-1.0] img is [0-255]
-            alpha_blended = 0.5 * color_cm * 255 + 0.5 * img
+            colored_class_image = utils.color_class_image(cm, args.model)
+            alpha_blended = 0.5 * colored_class_image * 255 + 0.5 * img
 
             if args.glob_path:
                 input_filename, ext = splitext(basename(img_path))
@@ -216,6 +297,6 @@ if __name__ == "__main__":
                 filename, ext = splitext(args.output_path)
 
             misc.imsave(filename + "_seg_read" + ext, cm)
-            misc.imsave(filename + "_seg" + ext, color_cm)
+            misc.imsave(filename + "_seg" + ext, colored_class_image)
             misc.imsave(filename + "_probs" + ext, pm)
             misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
