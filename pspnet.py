@@ -12,6 +12,7 @@ import layers_builder as layers
 from glob import glob
 from python_utils import utils
 from keras.utils.generic_utils import CustomObjectScope
+import cv2
 
 from imageio import imread
 # These are the means for the ImageNet pretrained ResNet
@@ -63,9 +64,7 @@ class PSPNet(object):
         probs = self.feed_forward(img, flip_evaluation)
 
         if (h_ori, w_ori) != self.input_shape:  # upscale prediction if necessary
-            h, w = probs.shape[:2]
-            probs = ndimage.zoom(probs, (1. * h_ori / h, 1. * w_ori / w, 1.),
-                                 order=1, prefilter=False)
+            probs = cv2.resize(probs, (w_ori, h_ori))
 
         print("Finished prediction...")
 
