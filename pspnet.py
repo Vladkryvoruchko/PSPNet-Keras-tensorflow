@@ -206,9 +206,8 @@ if __name__ == "__main__":
             cm = np.argmax(probs, axis=2)
             pm = np.max(probs, axis=2)
 
-        class_image = np.argmax(class_scores, axis=2)
-            # color cm is [0.0-1.0] img is [0-255]
-        colored_class_image = utils.color_class_image(class_image, args.model)
+            colored_class_image = utils.color_class_image(cm, args.model)
+            alpha_blended = 0.5 * colored_class_image * 255 + 0.5 * img
 
             if args.glob_path:
                 input_filename, ext = splitext(basename(img_path))
@@ -217,6 +216,6 @@ if __name__ == "__main__":
                 filename, ext = splitext(args.output_path)
 
             misc.imsave(filename + "_seg_read" + ext, cm)
-            misc.imsave(filename + "_seg" + ext, color_cm)
+            misc.imsave(filename + "_seg" + ext, colored_class_image)
             misc.imsave(filename + "_probs" + ext, pm)
             misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
