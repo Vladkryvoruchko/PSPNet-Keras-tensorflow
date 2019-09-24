@@ -61,7 +61,7 @@ class PSPNet(object):
 
         probs = self.feed_forward(img, flip_evaluation)
 
-        if img.shape[0:1] != self.input_shape:  # upscale prediction if necessary
+        if (h_ori, w_ori) != self.input_shape:  # upscale prediction if necessary
             h, w = probs.shape[:2]
             probs = ndimage.zoom(probs, (1. * h_ori / h, 1. * w_ori / w, 1.),
                                  order=1, prefilter=False)
@@ -199,7 +199,6 @@ if __name__ == "__main__":
         for i, img_path in enumerate(images):
             print("Processing image {} / {}".format(i+1,len(images)))
             img = misc.imread(img_path, mode='RGB')
-            cimg = misc.imresize(img, (args.input_size, args.input_size))
 
             probs = pspnet.predict(img, args.flip)
 
