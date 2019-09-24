@@ -14,6 +14,12 @@ from utils import utils
 from keras.utils.generic_utils import CustomObjectScope
 import cv2
 import math
+# -- Fix for macos, uncomment it
+# import matplotlib
+# matplotlib.use('TkAgg')
+# --
+import matplotlib.pyplot as plt
+
 
 from imageio import imread
 # These are the means for the ImageNet pretrained ResNet
@@ -67,7 +73,7 @@ class PSPNet(object):
 
         return probs
 
-    def predict_sliding(self, img, flip_evaluation):
+    def predict_sliding(self, full_img, flip_evaluation):
         """
         Predict on tiles of exactly the network input shape.
         This way nothing gets squeezed.
@@ -77,25 +83,25 @@ class PSPNet(object):
         overlap = 1 / 3
 
         stride = math.ceil(tile_size[0] * (1 - overlap))
-        tile_rows = max(int(math.ceil((img.shape[0] - tile_size[0]) / stride) + 1), 1)  # strided convolution formula
-        tile_cols = max(int(math.ceil((img.shape[1] - tile_size[1]) / stride) + 1), 1)
+        tile_rows = max(int(math.ceil((full_img.shape[0] - tile_size[0]) / stride) + 1), 1)  # strided convolution formula
+        tile_cols = max(int(math.ceil((full_img.shape[1] - tile_size[1]) / stride) + 1), 1)
         print("Need %i x %i prediction tiles @ stride %i px" % (tile_cols, tile_rows, stride))
-        full_probs = np.zeros((img.shape[0], img.shape[1], classes))
-        count_predictions = np.zeros((img.shape[0], img.shape[1], classes))
+        full_probs = np.zeros((full_img.shape[0], full_img.shape[1], classes))
+        count_predictions = np.zeros((full_img.shape[0], full_img.shape[1], classes))
         tile_counter = 0
         for row in range(tile_rows):
             for col in range(tile_cols):
                 x1 = int(col * stride)
                 y1 = int(row * stride)
-                x2 = min(x1 + tile_size[1], img.shape[1])
-                y2 = min(y1 + tile_size[0], img.shape[0])
+                x2 = min(x1 + tile_size[1], full_img.shape[1])
+                y2 = min(y1 + tile_size[0], full_img.shape[0])
                 x1 = max(int(x2 - tile_size[1]), 0)  # for portrait images the x1 underflows sometimes
                 y1 = max(int(y2 - tile_size[0]), 0)  # for very few rows y1 underflows
 
-                img = img[y1:y2, x1:x2]
+                img = full_img[y1:y2, x1:x2]
                 padded_img = self.pad_image(img, tile_size)
-                # plt.imshow(padded_img)
-                # plt.show()
+                plt.imshow(padded_img)
+                plt.show()
                 tile_counter += 1
                 print("Predicting tile %i" % tile_counter)
                 padded_prediction = self.predict(padded_img, flip_evaluation)
