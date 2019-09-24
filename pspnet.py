@@ -213,33 +213,9 @@ class PSPNet101(PSPNet):
                         input_shape=input_shape, weights=weights)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--model', type=str, default='pspnet101_voc2012',
-                        help='Model/Weights to use',
-                        choices=['pspnet50_ade20k',
-                                 'pspnet101_cityscapes',
-                                 'pspnet101_voc2012'])
-    parser.add_argument('-w', '--weights', type=str, default=None)
-    parser.add_argument('-i', '--input_path', type=str, default='example_images/ade20k.jpg',
-                        help='Path the input image')
-    parser.add_argument('-g', '--glob_path', type=str, default=None,
-                        help='Glob path for multiple images')
-    parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
-                        help='Path to output')
-    parser.add_argument('--id', default="0")
-    parser.add_argument('--input_size', type=int, default=500)
-    parser.add_argument('-s', '--sliding', action='store_true',
-                        help="Whether the network should be slided over the original image for prediction.")
-    parser.add_argument('-f', '--flip', action='store_true', default=True,
-                        help="Whether the network should predict on both image and flipped image.")
-    parser.add_argument('-ms', '--multi_scale', action='store_true',
-                        help="Whether the network should predict on multiple scales.")
-
-    args = parser.parse_args()
-
+def main(args):
     # Handle input and output args
-    images = glob(args.glob_path) if args.glob_path else [args.input_path,]
+    images = glob(args.glob_path) if args.glob_path else [args.input_path, ]
     if args.glob_path:
         fn, ext = splitext(args.output_path)
         if ext:
@@ -278,17 +254,16 @@ if __name__ == "__main__":
             EVALUATION_SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75]  # must be all floats! Taken from original paper
 
         for i, img_path in enumerate(images):
-            print("Processing image {} / {}".format(i+1,len(images)))
+            print("Processing image {} / {}".format(i + 1, len(images)))
             img = imread(img_path, pilmode='RGB')
 
-            #probs = pspnet.predict(img, args.flip)
             probs = pspnet.predict_multi_scale(img, args.flip, args.sliding, EVALUATION_SCALES)
 
             cm = np.argmax(probs, axis=2)
             pm = np.max(probs, axis=2)
 
             colored_class_image = utils.color_class_image(cm, args.model)
-            alpha_blended = 0.5 * colored_class_image * 255 + 0.5 * img
+            alpha_blended = 0.5 * colored_class_image + 0.5 * img
 
             if args.glob_path:
                 input_filename, ext = splitext(basename(img_path))
@@ -300,3 +275,31 @@ if __name__ == "__main__":
             misc.imsave(filename + "_seg" + ext, colored_class_image)
             misc.imsave(filename + "_probs" + ext, pm)
             misc.imsave(filename + "_seg_blended" + ext, alpha_blended)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-m', '--model', type=str, default='pspnet101_voc2012',
+                        help='Model/Weights to use',
+                        choices=['pspnet50_ade20k',
+                                 'pspnet101_cityscapes',
+                                 'pspnet101_voc2012'])
+    parser.add_argument('-w', '--weights', type=str, default=None)
+    parser.add_argument('-i', '--input_path', type=str, default='example_images/ade20k.jpg',
+                        help='Path the input image')
+    parser.add_argument('-g', '--glob_path', type=str, default=None,
+                        help='Glob path for multiple images')
+    parser.add_argument('-o', '--output_path', type=str, default='example_results/ade20k.jpg',
+                        help='Path to output')
+    parser.add_argument('--id', default="0")
+    parser.add_argument('--input_size', type=int, default=500)
+    parser.add_argument('-s', '--sliding', action='store_true',
+                        help="Whether the network should be slided over the original image for prediction.")
+    parser.add_argument('-f', '--flip', action='store_true', default=True,
+                        help="Whether the network should predict on both image and flipped image.")
+    parser.add_argument('-ms', '--multi_scale', action='store_true',
+                        help="Whether the network should predict on multiple scales.")
+
+    args = parser.parse_args()
+
+    main(args)
+
