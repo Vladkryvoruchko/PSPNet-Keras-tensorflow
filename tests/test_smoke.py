@@ -29,11 +29,32 @@ def test_main_flip_ade20k(cli_args_ade):
 
 @pytest.mark.skip
 def test_main_flip_cityscapes(cli_args_cityscapes):
+    """
+    TODO: Add images
+    :param cli_args_cityscapes:
+    :return:
+    """
     from pspnet import main
     main(cli_args_cityscapes)
+
+    compare_2_images("cityscapes_test_probs.jpg", "validators/cityscapes_test_probs.jpg")
+    compare_2_images("cityscapes_test_seg.jpg", "validators/cityscapes_test_seg.jpg")
+    compare_2_images("cityscapes_test_seg_read.jpg", "validators/cityscapes_test_seg_read.jpg")
+    clean_test_results("cityscapes_test")
+
 
 
 @pytest.mark.skip
 def test_main_flip_voc(cli_args_voc):
+    """
+    TODO: Add images
+    :param cli_args_voc:
+    :return:
+    """
     from pspnet import main
     main(cli_args_voc)
+
+    compare_2_images("pascal_voc_test_probs.jpg", "validators/pascal_voc_test_probs.jpg")
+    compare_2_images("pascal_voc_test_seg.jpg", "validators/pascal_voc_test_seg.jpg")
+    compare_2_images("pascal_voc_test_seg_read.jpg", "validators/pascal_voc_test_seg_read.jpg")
+    clean_test_results("pascal_voc_test")
